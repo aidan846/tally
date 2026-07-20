@@ -6,13 +6,13 @@ const INSTALLER_EXTENSIONS = new Set(['.dmg', '.exe', '.appimage']);
 async function moveItem(source, destinationDirectory) {
   await fs.mkdir(destinationDirectory, { recursive: true });
   const destination = path.join(destinationDirectory, path.basename(source));
+  if (path.resolve(source) === path.resolve(destination)) return;
   await fs.rm(destination, { recursive: true, force: true });
   await fs.rename(source, destination);
 }
 
 exports.afterAllArtifactBuild = async function organizeBuild(buildResult) {
   const outputDirectory = buildResult.outDir;
-  const installerDirectory = path.join(outputDirectory, 'installer');
   const extrasDirectory = path.join(outputDirectory, 'extra');
 
   for (const artifactPath of buildResult.artifactPaths) {
@@ -22,12 +22,12 @@ exports.afterAllArtifactBuild = async function organizeBuild(buildResult) {
       continue;
     }
     const extension = path.extname(artifactPath).toLowerCase();
-    await moveItem(artifactPath, INSTALLER_EXTENSIONS.has(extension) ? installerDirectory : extrasDirectory);
+    await moveItem(artifactPath, INSTALLER_EXTENSIONS.has(extension) ? outputDirectory : extrasDirectory);
   }
 
   const entries = await fs.readdir(outputDirectory, { withFileTypes: true });
   for (const entry of entries) {
-    if (entry.name === 'installer' || entry.name === 'extra') continue;
+    if (entry.name === 'extra' || INSTALLER_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
     await moveItem(path.join(outputDirectory, entry.name), extrasDirectory);
   }
 
