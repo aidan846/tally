@@ -277,7 +277,13 @@ function startAsyncQuery(input, output, query, kind) {
 function updateOutputs() {
     const inputs = [...calculator.querySelectorAll('.calculation-input')];
     const weatherQueries = inputs.map(input => parseWeatherQuery(input.value));
-    const stockQueries = inputs.map((input, index) => weatherQueries[index] ? null : parseStockExpression(input.value));
+    const knownVariables = new Set();
+    const stockQueries = inputs.map((input, index) => {
+        const query = weatherQueries[index] ? null : parseStockExpression(input.value, new Date(), knownVariables);
+        const assignment = input.value.match(/^([a-zA-Z_][a-zA-Z0-9_]*(?:\s+[a-zA-Z_][a-zA-Z0-9_]*)*)\s*[:=]/);
+        if (assignment) knownVariables.add(assignment[1].trim().toLowerCase());
+        return query;
+    });
     const asyncQueries = inputs.map((_, index) => weatherQueries[index] || stockQueries[index]);
     const results = evaluateInput(inputs.map((input, index) => asyncQueries[index] ? '' : input.value).join('\n'), decimalPlaces);
     inputs.forEach((input, index) => {

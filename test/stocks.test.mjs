@@ -26,6 +26,7 @@ assert.deepEqual(parseStockReference('MSFT 10 days ago', now), { symbol: 'MSFT',
 assert.deepEqual(parseStockReference('MSFT on Jan 15, 2019', now), { symbol: 'MSFT', field: 'close', date: '2019-01-15' });
 assert.equal(parseStockReference('sqrt 9', now), null);
 assert.equal(parseStockExpression('  MSFT  ', now).source, '  MSFT  ');
+assert.equal(parseStockExpression('Price', now, new Set(['price'])), null);
 
 assert.deepEqual(parseStockExpression('MSFT now - MSFT 3 months ago', now), {
     source: 'MSFT now - MSFT 3 months ago',

@@ -42,10 +42,12 @@ export function parseStockReference(value, now = new Date()) {
     return date ? { symbol, field: 'close', date } : null;
 }
 
-export function parseStockExpression(value, now = new Date()) {
+export function parseStockExpression(value, now = new Date(), knownVariables = new Set()) {
     const source = value;
     const expression = value.trim();
     if (!expression) return null;
+
+    if (knownVariables.has(expression.toLowerCase())) return null;
 
     const difference = expression.match(/^(.*?)\s+-\s+(.*?)$/);
     if (difference) {

@@ -112,5 +112,8 @@ assert.equal(evaluateInput('3:30 am NY to Hamburg', 2)[0], '9:30 am');
 assert.equal(evaluateInput('3:30 New York to Hamburg', 2)[0], '9:30 am');
 assert.equal(evaluateInput('14:20 New York to Beijing', 2)[0], '2:20 am');
 
+assert.deepEqual(evaluateInput('Price: 40\nPrice', 2), ['40.00', '40.00']);
+assert.deepEqual(evaluateInput('Price = 40\nPrice', 2), ['40.00', '40.00']);
+
 const randomResult = Number(evaluateInput('random number between 10 and 20', 2)[0]);
 assert.ok(Number.isInteger(randomResult) && randomResult >= 10 && randomResult <= 20);
