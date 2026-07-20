@@ -173,8 +173,10 @@ body {
 
 .calculation-input::selection { background: #2563eb; color: #fff; -webkit-text-fill-color: #fff; }
 .input-stack { min-width: 0; position: relative; }
-.calculation-highlight { box-sizing: border-box; color: #d7ddea; font: inherit; font-size: 0.8rem; left: 0; line-height: 1.5; margin: 0; min-height: 1.5rem; overflow-wrap: anywhere; pointer-events: none; position: absolute; right: 0; top: 0; white-space: pre-wrap; word-break: break-word; z-index: 0; }
-.input-placeholder { color: #9ca8bf; display: none; font-size: 0.8rem; left: 0; line-height: 1.5rem; overflow: hidden; pointer-events: none; position: absolute; right: 0; text-overflow: ellipsis; top: 0; white-space: nowrap; z-index: 0; }
+.calculation-highlight,
+.input-placeholder { box-sizing: border-box; font: inherit; font-size: 0.8rem; left: 0; line-height: 1.5; margin: 0; min-height: 1.5rem; pointer-events: none; position: absolute; right: 0; top: 0; z-index: 0; }
+.calculation-highlight { color: #d7ddea; overflow-wrap: anywhere; white-space: pre-wrap; word-break: break-word; }
+.input-placeholder { color: #9ca8bf; display: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .calculation-row.is-empty .input-placeholder { display: block; }
 .token-number { color: #60a5fa; }
 .token-unit { color: #4ade80; }

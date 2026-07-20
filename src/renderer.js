@@ -1,5 +1,6 @@
 import { initializeSettings, decimalPlaces } from './settings.js';
 import { evaluateInput } from './parser.js';
+import { parseStockExpression } from './stocks/query.js';
 
 const calculator = document.getElementById('calculator');
 const PLACEHOLDERS = [
@@ -11,9 +12,12 @@ const PLACEHOLDERS = [
     'Try: 1 ft3 to l',
     'Try: price = 24.99',
     'Try: 10 million to billion',
-    'Try: ppi = 326'
+    'Try: ppi = 326',
+    'Try: MSFT 10 days ago'
 ];
 let previousPlaceholderIndex = -1;
+let stockRequestVersion = 0;
+let stockRequestTimer;
 
 async function loadLocalUnits() {
     try {
@@ -192,16 +196,45 @@ function attachCopyHandler(output) {
     });
 }
 
+function setOutput(output, answer) {
+    output.innerHTML = formatAnswer(answer);
+    output.setAttribute('aria-label', answer === '❌' ? 'Could not evaluate this calculation' : String(answer || ''));
+}
+
+function formatStockValue(result) {
+    return `${result.value.toFixed(decimalPlaces)} ${result.currency}`;
+}
+
 function updateOutputs() {
     const inputs = [...calculator.querySelectorAll('.calculation-input')];
-    const results = evaluateInput(inputs.map(input => input.value).join('\n'), decimalPlaces);
+    const stockQueries = inputs.map(input => parseStockExpression(input.value));
+    const results = evaluateInput(inputs.map((input, index) => stockQueries[index] ? '' : input.value).join('\n'), decimalPlaces);
+    const requestVersion = ++stockRequestVersion;
+
+    window.clearTimeout(stockRequestTimer);
     inputs.forEach((input, index) => {
         const output = input.closest('.calculation-row').querySelector('.calculation-output');
-        output.innerHTML = formatAnswer(results[index]);
-        output.setAttribute('aria-label', results[index] === '❌' ? 'Could not evaluate this calculation' : String(results[index] || ''));
+        setOutput(output, stockQueries[index] ? '…' : results[index]);
         resizeInput(input);
         renderHighlight(input);
     });
+
+    if (!stockQueries.some(Boolean)) return;
+
+    stockRequestTimer = window.setTimeout(() => {
+        stockQueries.forEach(async (query, index) => {
+            if (!query) return;
+            try {
+                const result = await window.electronAPI.getStockData(query);
+                if (requestVersion !== stockRequestVersion || inputs[index].value !== query.source) return;
+                setOutput(inputs[index].closest('.calculation-row').querySelector('.calculation-output'), formatStockValue(result));
+            } catch (error) {
+                if (requestVersion !== stockRequestVersion || inputs[index].value !== query.source) return;
+                console.error('Could not load stock data:', error);
+                setOutput(inputs[index].closest('.calculation-row').querySelector('.calculation-output'), '❌');
+            }
+        });
+    }, 250);
 }
 
 function createRow(value = '') {
@@ -210,7 +243,7 @@ function createRow(value = '') {
     row.innerHTML = `
         <div class="input-stack">
             <pre class="calculation-highlight" aria-hidden="true"></pre>
-            <span class="input-placeholder" aria-hidden="true"></span>
+            <pre class="input-placeholder" aria-hidden="true"></pre>
             <textarea class="calculation-input" rows="1" aria-label="Calculation"></textarea>
         </div>
         <output class="calculation-output"></output>`;

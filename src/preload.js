@@ -7,7 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   setConfig: (newConfig) => ipcRenderer.invoke('set-config', newConfig),
 
-  getUnitDefinitions: () => ipcRenderer.invoke('get-unit-definitions')
+  getUnitDefinitions: () => ipcRenderer.invoke('get-unit-definitions'),
+  getStockData: (query) => ipcRenderer.invoke('get-stock-data', query)
 });
 
 console.log("Preload script loaded and electronAPI exposed to renderer.");

@@ -2,6 +2,7 @@ const { app, BrowserWindow } = require('electron');
 const { ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const { getStockData } = require('./stocks/provider.cjs');
 
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -38,6 +39,8 @@ ipcMain.handle('set-config', (_event, newConfig) => {
   saveConfig(config);
   return config;
 });
+
+ipcMain.handle('get-stock-data', (_event, query) => getStockData(query));
 
 function readUnitDefinitions() {
   const unitsDirPath = path.join(__dirname, 'units');
