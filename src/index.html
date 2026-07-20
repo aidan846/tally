@@ -7,6 +7,9 @@
   <title>Tally</title>
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
   <link rel="stylesheet" href="index.css" />
+  <script>
+    document.documentElement.dataset.platform = window.electronAPI.platform;
+  </script>
 </head>
 
 <body>
@@ -21,6 +24,11 @@
       <button id="settings-button" aria-label="Settings" title="Settings">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h12M20 17h0"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="18" cy="17" r="2"/></svg>
       </button>
+    </div>
+    <div class="window-controls" aria-label="Window controls">
+      <button id="minimize-button" aria-label="Minimize" title="Minimize">−</button>
+      <button id="maximize-button" aria-label="Maximize" title="Maximize">□</button>
+      <button id="close-button" aria-label="Close" title="Close">×</button>
     </div>
   </div>
   <div id="settings-panel" hidden>

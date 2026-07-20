@@ -132,6 +132,29 @@ const createWindow = () => {
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 };
 
+function getWindowFromEvent(event) {
+  return BrowserWindow.fromWebContents(event.sender);
+}
+
+ipcMain.handle('window-minimize', event => {
+  getWindowFromEvent(event)?.minimize();
+});
+
+ipcMain.handle('window-toggle-maximize', event => {
+  const window = getWindowFromEvent(event);
+  if (!window) return false;
+  if (window.isMaximized()) {
+    window.unmaximize();
+  } else {
+    window.maximize();
+  }
+  return window.isMaximized();
+});
+
+ipcMain.handle('window-close', event => {
+  getWindowFromEvent(event)?.close();
+});
+
 app.whenReady().then(() => {
   const allowLocation = webContents => webContents?.getURL().startsWith('file://');
   session.defaultSession.setPermissionCheckHandler((webContents, permission) => permission === 'geolocation' && allowLocation(webContents));

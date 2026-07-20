@@ -1,6 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  platform: process.platform,
+  minimizeWindow: () => ipcRenderer.invoke('window-minimize'),
+  toggleMaximizeWindow: () => ipcRenderer.invoke('window-toggle-maximize'),
+  closeWindow: () => ipcRenderer.invoke('window-close'),
   onSetTheme: (callback) => ipcRenderer.on('set-theme', (event, theme) => callback(theme)),
   onSetDecimals: (callback) => ipcRenderer.on('set-decimals', (_, value) => callback(value)),
 

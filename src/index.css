@@ -64,8 +64,35 @@
 #settings-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.7; }
 
 .window-controls {
+  display: none;
   -webkit-app-region: no-drag;
 }
+
+html[data-platform="win32"] #titlebar-left { display: none; }
+html[data-platform="win32"] #titlebar-right {
+  margin-left: 0;
+  order: -1;
+}
+html[data-platform="win32"] .window-controls {
+  display: flex;
+  align-items: stretch;
+  height: 32px;
+  margin-left: auto;
+}
+html[data-platform="win32"] .window-controls button {
+  -webkit-app-region: no-drag;
+  width: 46px;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1;
+}
+html[data-platform="win32"] .window-controls button:hover { background: rgba(255,255,255,0.12); }
+html[data-platform="win32"] .window-controls #close-button:hover { background: #c42b1c; color: #fff; }
 
 #settings-panel {
   position: absolute;
@@ -79,6 +106,11 @@
   border-radius: 12px;
   box-shadow: 0 14px 35px rgba(0,0,0,0.35);
   z-index: 1000;
+}
+
+html[data-platform="win32"] #settings-panel {
+  left: 1rem;
+  right: auto;
 }
 
 .settings-heading { color: #aeb7d4; font-size: 0.68rem; font-weight: bold; letter-spacing: 0.09em; margin: 0 0 0.55rem; text-transform: uppercase; }
