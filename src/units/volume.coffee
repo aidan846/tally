@@ -7,12 +7,12 @@ module.exports = {
     'dl': {ratio: 0.1},
     'l': {ratio: 1},
     'kl': {ratio: 1000},
-    'tsp': {ratio: 0.00492892}, # teaspoon
-    'tbsp': {ratio: 0.0147868}, # tablespoon
+    'tsp': {ratio: 0.00492892},
+    'tbsp': {ratio: 0.0147868},
     'cup': {ratio: 0.236588},
-    'pt': {ratio: 0.473176}, # US liquid pint
-    'qt': {ratio: 0.946353}, # US liquid quart
-    'gal': {ratio: 3.78541} # US liquid gallon
+    'pt': {ratio: 0.473176},
+    'qt': {ratio: 0.946353},
+    'gal': {ratio: 3.78541}
   },
   aliases: {
     'milliliter': 'ml',

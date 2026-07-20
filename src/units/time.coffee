@@ -10,7 +10,7 @@ module.exports = {
     'hr': {ratio: 3600},
     'day': {ratio: 86400},
     'week': {ratio: 604800},
-    'yr': {ratio: 31536000} # 365 days
+    'yr': {ratio: 31536000}
   },
   aliases: {
     'nanosecond': 'ns',

@@ -2,7 +2,18 @@ import { initializeSettings, decimalPlaces } from './settings.js';
 import { evaluateInput } from './parser.js';
 
 const calculator = document.getElementById('calculator');
-let lastFocusedInput = null;
+const PLACEHOLDERS = [
+    'Try: 5 feet to cm',
+    'Try: 20% off 85',
+    'Try: sqrt4',
+    'Try: 10 days ago',
+    'Try: 60 mph to km/h',
+    'Try: 1 ft3 to l',
+    'Try: price = 24.99',
+    'Try: 10 million to billion',
+    'Try: ppi = 326'
+];
+let previousPlaceholderIndex = -1;
 
 async function loadLocalUnits() {
     try {
@@ -56,16 +67,20 @@ async function loadCurrencyUnits() {
 
         const rates = data.conversion_rates;
 
-        math.createUnit('USD', { aliases: ['$', 'dollar', 'dollars'] }, { override: true });
-        math.createUnit('EUR', { aliases: ['€', 'euro', 'euros'] }, { override: true });
-        math.createUnit('GBP', { aliases: ['£', 'pound', 'pounds'] }, { override: true });
-        math.createUnit('JPY', { aliases: ['¥', 'yen'] }, { override: true });
+        const currencyAliases = {
+            USD: ['$', 'usd', 'dollar', 'dollars', 'us dollar', 'us dollars'],
+            EUR: ['€', 'eur', 'euro', 'euros'],
+            GBP: ['£', 'gbp', 'pound', 'pounds', 'pound sterling', 'pounds sterling'],
+            JPY: ['¥', 'jpy', 'yen']
+        };
+
+        math.createUnit('USD', { aliases: currencyAliases.USD }, { override: true });
 
         for (const currency in rates) {
             if (currency !== 'USD') {
                 math.createUnit(currency, {
                     definition: `${1 / rates[currency]} USD`,
-                    aliases: [currency.toLowerCase()]
+                    aliases: currencyAliases[currency] || [currency.toLowerCase()]
                 }, {override: true});
             }
         }
@@ -105,6 +120,46 @@ function highlightExpression(value) {
 
 function renderHighlight(input) {
     input.parentElement.querySelector('.calculation-highlight').innerHTML = highlightExpression(input.value);
+    input.closest('.calculation-row').classList.toggle('is-empty', input.value.length === 0);
+}
+
+function setPlaceholder(input) {
+    let index = Math.floor(Math.random() * PLACEHOLDERS.length);
+    if (PLACEHOLDERS.length > 1 && index === previousPlaceholderIndex) {
+        index = (index + 1) % PLACEHOLDERS.length;
+    }
+    previousPlaceholderIndex = index;
+    input.parentElement.querySelector('.input-placeholder').textContent = PLACEHOLDERS[index];
+}
+
+function formatAnswer(answer) {
+    const text = String(answer ?? '');
+    if (text === '❌') {
+        return '<span class="answer-error-icon" title="Could not evaluate this calculation" aria-label="Could not evaluate this calculation"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M9 9l6 6m0-6l-6 6"/></svg></span>';
+    }
+    const match = text.match(/^([+-]?(?:\d[\d,]*(?:\.\d+)?(?:e[+-]?\d+)?|\.\d+)%?)(\s+)(.+)$/i);
+    if (match) {
+        return `<span class="answer-number">${escapeHtml(match[1])}</span>${escapeHtml(match[2])}<span class="answer-unit">${escapeHtml(match[3])}</span>`;
+    }
+    return /^[+-]?(?:\d|\.\d)/.test(text)
+        ? `<span class="answer-number">${escapeHtml(text)}</span>`
+        : escapeHtml(text);
+}
+
+function showCopyToast(message = 'Copied to clipboard') {
+    let toast = document.getElementById('copy-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'copy-toast';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        document.body.append(toast);
+    }
+    toast.textContent = `✓  ${message}`;
+    toast.classList.remove('visible');
+    void toast.offsetWidth;
+    toast.classList.add('visible');
+    window.setTimeout(() => toast.classList.remove('visible'), 1600);
 }
 
 async function copyToClipboard(value) {
@@ -130,11 +185,7 @@ function attachCopyHandler(output) {
         event.preventDefault();
         try {
             await copyToClipboard(value);
-            output.dataset.copyStatus = 'Copied';
-            output.classList.remove('copied');
-            void output.offsetWidth;
-            output.classList.add('copied');
-            window.setTimeout(() => output.classList.remove('copied'), 1300);
+            showCopyToast('Answer copied');
         } catch (error) {
             console.error('Could not copy result:', error);
         }
@@ -146,7 +197,8 @@ function updateOutputs() {
     const results = evaluateInput(inputs.map(input => input.value).join('\n'), decimalPlaces);
     inputs.forEach((input, index) => {
         const output = input.closest('.calculation-row').querySelector('.calculation-output');
-        output.textContent = results[index] || '';
+        output.innerHTML = formatAnswer(results[index]);
+        output.setAttribute('aria-label', results[index] === '❌' ? 'Could not evaluate this calculation' : String(results[index] || ''));
         resizeInput(input);
         renderHighlight(input);
     });
@@ -158,7 +210,8 @@ function createRow(value = '') {
     row.innerHTML = `
         <div class="input-stack">
             <pre class="calculation-highlight" aria-hidden="true"></pre>
-            <textarea class="calculation-input" rows="1" placeholder="Type something like: 5 feet to cm"></textarea>
+            <span class="input-placeholder" aria-hidden="true"></span>
+            <textarea class="calculation-input" rows="1" aria-label="Calculation"></textarea>
         </div>
         <output class="calculation-output"></output>`;
     const input = row.querySelector('.calculation-input');
@@ -166,7 +219,6 @@ function createRow(value = '') {
     input.value = value;
 
     input.addEventListener('input', updateOutputs);
-    input.addEventListener('focus', () => { lastFocusedInput = input; });
     input.addEventListener('keydown', event => {
         if (event.key === 'Enter' && !event.isComposing) {
             event.preventDefault();
@@ -177,6 +229,7 @@ function createRow(value = '') {
         }
     });
     attachCopyHandler(output);
+    setPlaceholder(input);
     renderHighlight(input);
     return row;
 }
@@ -185,20 +238,19 @@ function initializeCalculator() {
     const firstInput = calculator.querySelector('.calculation-input');
     const firstOutput = calculator.querySelector('.calculation-output');
     firstInput.addEventListener('input', updateOutputs);
-    firstInput.addEventListener('focus', () => { lastFocusedInput = firstInput; });
     firstInput.addEventListener('keydown', event => {
         if (event.key === 'Enter' && !event.isComposing) {
             event.preventDefault();
             const nextRow = createRow();
-            firstInput.parentElement.after(nextRow);
+            firstInput.closest('.calculation-row').after(nextRow);
             nextRow.querySelector('.calculation-input').focus();
             updateOutputs();
         }
     });
     resizeInput(firstInput);
+    setPlaceholder(firstInput);
     renderHighlight(firstInput);
     attachCopyHandler(firstOutput);
-    lastFocusedInput = firstInput;
 }
 
 function clearCalculator() {
@@ -207,17 +259,43 @@ function clearCalculator() {
     updateOutputs();
 }
 
+function deleteRow(row) {
+    const rows = [...calculator.querySelectorAll('.calculation-row')];
+    if (rows.length === 1) {
+        const input = row.querySelector('.calculation-input');
+        input.value = '';
+        input.focus();
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+    }
+
+    const rowIndex = rows.indexOf(row);
+    const nextInput = rows[rowIndex + 1]?.querySelector('.calculation-input')
+        || rows[rowIndex - 1]?.querySelector('.calculation-input');
+    row.remove();
+    nextInput.focus();
+    updateOutputs();
+}
+
 function focusCurrentInput() {
-    const input = lastFocusedInput?.isConnected
-        ? lastFocusedInput
-        : calculator.querySelector('.calculation-input');
+    const input = calculator.querySelector('.calculation-row:last-child .calculation-input');
     if (!input) return;
     input.focus();
     const end = input.value.length;
     input.setSelectionRange(end, end);
 }
 
+function insertIntoNewestInput(key) {
+    const input = calculator.querySelector('.calculation-row:last-child .calculation-input');
+    if (!input) return;
+    focusCurrentInput();
+    const cursor = input.selectionStart;
+    input.setRangeText(key, cursor, cursor, 'end');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 let recentClearKeys = [];
+let recentDeleteKeys = [];
 window.addEventListener('keydown', event => {
     if (event.key.toLowerCase() !== 'c' || event.metaKey || event.ctrlKey || event.altKey) return;
     const now = Date.now();
@@ -230,6 +308,45 @@ window.addEventListener('keydown', event => {
     }
 });
 
+window.addEventListener('keydown', event => {
+    if (event.key.toLowerCase() !== 'x' || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (!document.getElementById('settings-panel').hidden) return;
+    const activeInput = document.activeElement?.classList?.contains('calculation-input') && document.activeElement;
+    if (!activeInput) return;
+
+    const now = Date.now();
+    recentDeleteKeys = recentDeleteKeys.filter(time => now - time < 600);
+    recentDeleteKeys.push(now);
+    if (recentDeleteKeys.length === 2) {
+        event.preventDefault();
+        recentDeleteKeys = [];
+        deleteRow(activeInput.closest('.calculation-row'));
+    }
+});
+
+document.addEventListener('keydown', async event => {
+    if (event.key.toLowerCase() !== 'c' || (!event.ctrlKey && !event.metaKey)) return;
+    if (!document.getElementById('settings-panel').hidden) return;
+
+    const activeInput = document.activeElement?.classList?.contains('calculation-input') && document.activeElement;
+    if (activeInput && activeInput.selectionStart !== activeInput.selectionEnd) return;
+    if (window.getSelection()?.toString()) return;
+
+    const input = activeInput || calculator.querySelector('.calculation-row:last-child .calculation-input');
+    if (!input) return;
+    const output = input.closest('.calculation-row').querySelector('.calculation-output').textContent.trim();
+    const line = output ? `${input.value} = ${output}` : input.value;
+    if (!line) return;
+
+    event.preventDefault();
+    try {
+        await copyToClipboard(line);
+        showCopyToast('Line copied');
+    } catch (error) {
+        console.error('Could not copy line:', error);
+    }
+});
+
 document.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.key.length !== 1 || event.metaKey || event.ctrlKey || event.altKey) return;
 
@@ -237,14 +354,8 @@ document.addEventListener('keydown', event => {
     if (activeElement?.closest?.('#settings-panel') || activeElement === document.getElementById('settings-button')) return;
     if (activeElement?.classList?.contains('calculation-input')) return;
 
-    const input = lastFocusedInput?.isConnected ? lastFocusedInput : calculator.querySelector('.calculation-input');
-    if (!input) return;
-
     event.preventDefault();
-    focusCurrentInput();
-    const end = input.selectionStart;
-    input.setRangeText(event.key, end, end, 'end');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+    insertIntoNewestInput(event.key);
 });
 
 window.addEventListener('focus', () => {
@@ -257,8 +368,8 @@ window.addEventListener('focus', () => {
 });
 
 document.addEventListener('tally:settings-changed', updateOutputs);
+document.addEventListener('tally:begin-input', event => insertIntoNewestInput(event.detail));
 
-// This function kicks everything off.
 async function main() {
     await loadLocalUnits();
     await loadCurrencyUnits();

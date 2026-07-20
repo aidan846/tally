@@ -171,10 +171,11 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
-.calculation-input::placeholder { color: #9ca8bf; -webkit-text-fill-color: #9ca8bf; opacity: 1; }
 .calculation-input::selection { background: #2563eb; color: #fff; -webkit-text-fill-color: #fff; }
 .input-stack { min-width: 0; position: relative; }
 .calculation-highlight { box-sizing: border-box; color: #d7ddea; font: inherit; font-size: 0.8rem; left: 0; line-height: 1.5; margin: 0; min-height: 1.5rem; overflow-wrap: anywhere; pointer-events: none; position: absolute; right: 0; top: 0; white-space: pre-wrap; word-break: break-word; z-index: 0; }
+.input-placeholder { color: #9ca8bf; display: none; font-size: 0.8rem; left: 0; line-height: 1.5rem; overflow: hidden; pointer-events: none; position: absolute; right: 0; text-overflow: ellipsis; top: 0; white-space: nowrap; z-index: 0; }
+.calculation-row.is-empty .input-placeholder { display: block; }
 .token-number { color: #60a5fa; }
 .token-unit { color: #4ade80; }
 .token-connector { color: #fbbf24; }
@@ -192,26 +193,31 @@ body {
   cursor: copy;
 }
 
-.calculation-output.copied::after {
-  content: attr(data-copy-status);
-  position: absolute;
-  right: 0;
-  top: -1.45rem;
-  padding: 0.15rem 0.38rem;
-  border-radius: 5px;
+.answer-number { color: #fbbf24; }
+.answer-unit { color: #4ade80; }
+.answer-error-icon { display: inline-flex; color: #fb7185; vertical-align: middle; }
+.answer-error-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.8; }
+
+#copy-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2000;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(134, 239, 172, 0.35);
+  border-radius: 8px;
   background: #14532d;
   color: #dcfce7;
-  font-size: 0.65rem;
-  font-weight: normal;
-  animation: copied-toast 1.3s ease both;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  font-size: 0.72rem;
+  font-weight: bold;
+  opacity: 0;
   pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 160ms ease, transform 160ms ease;
 }
 
-@keyframes copied-toast {
-  0% { opacity: 0; transform: translateY(4px); }
-  18%, 72% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-3px); }
-}
+#copy-toast.visible { opacity: 1; transform: translateY(0); }
 
 body.light {
   background: #f7f7f7;
@@ -226,7 +232,7 @@ body.light .calculation-input {
   caret-color: #111827;
 }
 
-body.light .calculation-input::placeholder { color: #64748b; -webkit-text-fill-color: #64748b; }
+body.light .input-placeholder { color: #64748b; }
 body.light .calculation-input::selection { background: #bfdbfe; color: #172554; -webkit-text-fill-color: #172554; }
 
 body.light .calculation-highlight { color: #1f2937; }
@@ -239,7 +245,10 @@ body.light .calculation-output {
   color: #000;
 }
 
-body.light .calculation-output.copied::after { background: #bbf7d0; color: #14532d; }
+body.light .answer-number { color: #a16207; }
+body.light .answer-unit { color: #15803d; }
+body.light .answer-error-icon { color: #dc2626; }
+body.light #copy-toast { background: #dcfce7; border-color: #86efac; color: #166534; }
 
 body.light #decimals {
   background-color: #f7f7f7;
@@ -256,7 +265,6 @@ body.light #theme-select {
 
 
 
-/* --- Syntax Highlighting Colors --- */
 .output-number {
     color: #007bff;
     font-weight: bold;

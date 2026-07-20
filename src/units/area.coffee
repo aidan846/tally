@@ -6,12 +6,12 @@ module.exports = {
     'cm2': {ratio: Math.pow(0.01, 2)},
     'm2': {ratio: 1},
     'km2': {ratio: Math.pow(1000, 2)},
-    'in2': {ratio: Math.pow(0.0254, 2)}, # square inch
-    'ft2': {ratio: Math.pow(0.3048, 2)}, # square foot
-    'yd2': {ratio: Math.pow(0.9144, 2)}, # square yard
-    'mi2': {ratio: Math.pow(1609.34, 2)}, # square mile
-    'ac': {ratio: 4046.86}, # acre = 4046.86 square meters
-    'ha': {ratio: 10000} # hectare = 10000 square meters
+    'in2': {ratio: Math.pow(0.0254, 2)},
+    'ft2': {ratio: Math.pow(0.3048, 2)},
+    'yd2': {ratio: Math.pow(0.9144, 2)},
+    'mi2': {ratio: Math.pow(1609.34, 2)},
+    'ac': {ratio: 4046.86},
+    'ha': {ratio: 10000}
   },
   aliases: {
     'square millimeter': 'mm2',

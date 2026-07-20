@@ -8,8 +8,9 @@
     "productName": "Tally",
     "directories": {
       "buildResources": "src/assets",
-      "output": "dist"
+      "output": "build"
     },
+    "afterAllArtifactBuild": "./scripts/organize-build.cjs",
     "mac": {
       "target": "dmg",
       "identity": null,
@@ -17,7 +18,7 @@
       "icon": "src/assets/icon.icns"
     },
     "win": {
-      "target": ["nsis", "portable"],
+      "target": "nsis",
       "icon": "src/assets/icon.png"
     },
     "linux": {
@@ -31,9 +32,9 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "build:mac": "electron-builder --mac",
-    "build:win": "electron-builder --win --x64",
-    "build:both": "electron-builder --mac --win",
+    "build:mac": "electron-builder --mac --config.directories.output=build/mac && node scripts/organize-build.cjs build/mac",
+    "build:win": "electron-builder --win --x64 --config.directories.output=build/win && node scripts/organize-build.cjs build/win",
+    "build:both": "npm run build:mac && npm run build:win",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",

@@ -32,6 +32,8 @@
       <option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
     </select></label>
     <div class="settings-shortcut"><kbd>C</kbd><kbd>C</kbd><kbd>C</kbd><span>clear all</span></div>
+    <div class="settings-shortcut"><kbd>X</kbd><kbd>X</kbd><span>delete row</span></div>
+    <div class="settings-shortcut"><kbd>Ctrl</kbd><kbd>C</kbd><span>copy line</span></div>
   </div>
 
   <div class="container">
@@ -39,15 +41,15 @@
       <div class="calculation-row">
         <div class="input-stack">
           <pre class="calculation-highlight" aria-hidden="true"></pre>
-          <textarea class="calculation-input" rows="1" placeholder="Type something like: 5 feet to cm"></textarea>
+          <span class="input-placeholder" aria-hidden="true"></span>
+          <textarea class="calculation-input" rows="1" aria-label="Calculation"></textarea>
         </div>
         <output class="calculation-output"></output>
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
-  <!--<script src="main.js"></script>-->
+  <script src="../node_modules/mathjs/lib/browser/math.js"></script>
   <script type="module" src="renderer.js"></script>
 </body>
 

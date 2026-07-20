@@ -2,10 +2,6 @@ const parser = math.parser();
 
 let previousResults = [];
 
-// Unit conversion is deliberately parsed before handing an expression to
-// math.js.  Math.js is excellent at multiplicative units, but temperatures
-// need an offset (°F ↔ °C) and human input has many equivalent spellings.
-// Keeping those rules here means every spelling follows the same path.
 const UNIT_FAMILIES = {
     temperature: {
         units: {
@@ -36,13 +32,16 @@ const UNIT_FAMILIES = {
         ml: { factor: 0.001, aliases: ['ml', 'milliliter', 'milliliters', 'millilitre', 'millilitres'] }, l: { factor: 1, aliases: ['l', 'liter', 'liters', 'litre', 'litres'] },
         cl: { factor: 0.01, aliases: ['cl', 'centiliter', 'centiliters'] }, dl: { factor: 0.1, aliases: ['dl', 'deciliter', 'deciliters'] }, kl: { factor: 1000, aliases: ['kl', 'kiloliter', 'kiloliters'] },
         tsp: { factor: 0.00492892159375, aliases: ['tsp', 'teaspoon', 'teaspoons'] }, tbsp: { factor: 0.01478676478125, aliases: ['tbsp', 'tablespoon', 'tablespoons'] }, cup: { factor: 0.2365882365, aliases: ['cup', 'cups'] },
-        pt: { factor: 0.473176473, aliases: ['pt', 'pint', 'pints'] }, qt: { factor: 0.946352946, aliases: ['qt', 'quart', 'quarts'] }, gal: { factor: 3.785411784, aliases: ['gal', 'gallon', 'gallons'] }
+        pt: { factor: 0.473176473, aliases: ['pt', 'pint', 'pints'] }, qt: { factor: 0.946352946, aliases: ['qt', 'quart', 'quarts'] }, gal: { factor: 3.785411784, aliases: ['gal', 'gallon', 'gallons'] },
+        mm3: { factor: 1e-6, aliases: ['mm3', 'mm³', 'mm^3', 'cubic millimeter', 'cubic millimeters'] }, cm3: { factor: 0.001, aliases: ['cm3', 'cm³', 'cm^3', 'cubic centimeter', 'cubic centimeters'] },
+        m3: { factor: 1000, aliases: ['m3', 'm³', 'm^3', 'cubic meter', 'cubic meters', 'cubic metre', 'cubic metres'] }, in3: { factor: 0.016387064, aliases: ['in3', 'in³', 'in^3', 'cubic inch', 'cubic inches'] },
+        ft3: { factor: 28.316846592, aliases: ['ft3', 'ft³', 'ft^3', 'cubic foot', 'cubic feet'] }, yd3: { factor: 764.554857984, aliases: ['yd3', 'yd³', 'yd^3', 'cubic yard', 'cubic yards'] }
     } },
     area: { base: 'm2', units: {
-        mm2: { factor: 1e-6, aliases: ['mm2', 'mm²', 'square millimeter', 'square millimeters'] }, cm2: { factor: 1e-4, aliases: ['cm2', 'cm²', 'square centimeter', 'square centimeters'] },
-        m2: { factor: 1, aliases: ['m2', 'm²', 'square meter', 'square meters', 'square metre', 'square metres'] }, km2: { factor: 1e6, aliases: ['km2', 'km²', 'square kilometer', 'square kilometers', 'square kilometre', 'square kilometres'] },
-        in2: { factor: 0.00064516, aliases: ['in2', 'in²', 'square inch', 'square inches'] }, ft2: { factor: 0.09290304, aliases: ['ft2', 'ft²', 'square foot', 'square feet'] },
-        yd2: { factor: 0.83612736, aliases: ['yd2', 'yd²', 'square yard', 'square yards'] }, mi2: { factor: 2589988.110336, aliases: ['mi2', 'mi²', 'square mile', 'square miles'] },
+        mm2: { factor: 1e-6, aliases: ['mm2', 'mm²', 'mm^2', 'square millimeter', 'square millimeters'] }, cm2: { factor: 1e-4, aliases: ['cm2', 'cm²', 'cm^2', 'square centimeter', 'square centimeters'] },
+        m2: { factor: 1, aliases: ['m2', 'm²', 'm^2', 'square meter', 'square meters', 'square metre', 'square metres'] }, km2: { factor: 1e6, aliases: ['km2', 'km²', 'km^2', 'square kilometer', 'square kilometers', 'square kilometre', 'square kilometres'] },
+        in2: { factor: 0.00064516, aliases: ['in2', 'in²', 'in^2', 'square inch', 'square inches'] }, ft2: { factor: 0.09290304, aliases: ['ft2', 'ft²', 'ft^2', 'square foot', 'square feet'] },
+        yd2: { factor: 0.83612736, aliases: ['yd2', 'yd²', 'yd^2', 'square yard', 'square yards'] }, mi2: { factor: 2589988.110336, aliases: ['mi2', 'mi²', 'mi^2', 'square mile', 'square miles'] },
         ac: { factor: 4046.8564224, aliases: ['ac', 'acre', 'acres'] }, ha: { factor: 10000, aliases: ['ha', 'hectare', 'hectares'] }
     } },
     speed: { base: 'm/s', units: {
@@ -57,6 +56,14 @@ const UNIT_FAMILIES = {
         atm: { factor: 101325, aliases: ['atm', 'atmosphere', 'atmospheres', 'standard atmosphere', 'standard atmospheres'] },
         psi: { factor: 6894.757293168, aliases: ['psi', 'pound per square inch', 'pounds per square inch'] },
         torr: { factor: 133.3223684211, aliases: ['torr', 'mmhg', 'mm hg', 'millimeter of mercury', 'millimeters of mercury'] }
+    } },
+    magnitude: { base: 'one', units: {
+        thousand: { factor: 1e3, aliases: ['thousand', 'thousands'] },
+        million: { factor: 1e6, aliases: ['million', 'millions', 'mil', 'mils'] },
+        billion: { factor: 1e9, aliases: ['billion', 'billions', 'bil', 'bils'] },
+        trillion: { factor: 1e12, aliases: ['trillion', 'trillions', 'tril', 'trils'] },
+        quadrillion: { factor: 1e15, aliases: ['quadrillion', 'quadrillions', 'quadril', 'quadrils'] },
+        quintillion: { factor: 1e18, aliases: ['quintillion', 'quintillions', 'quintil', 'quintils'] }
     } },
     data: { base: 'bit', units: {
         bit: { factor: 1, aliases: ['bit', 'bits', 'b'] }, B: { factor: 8, aliases: ['B', 'byte', 'bytes'] },
@@ -88,9 +95,11 @@ function findUnit(name) {
 }
 
 function parseUnitConversion(line, decimalPlaces) {
-    // Supports both "5ft to cm" and "5 feet in centimeters". The source
-    // unit is intentionally non-greedy so no-space abbreviations work too.
-    const match = line.trim().match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)\s*(.*?)\s+(?:to|in|into|as)\s+(.*?)\s*$/i);
+    let match = line.trim().match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)\s*(.*?)\s+(?:to|in|into|as)\s+(.*?)\s*$/i);
+    if (!match) {
+        const inchesMatch = line.trim().match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)\s*(.*?)\s+in\s*$/i);
+        if (inchesMatch) match = [inchesMatch[0], inchesMatch[1], inchesMatch[2], 'in'];
+    }
     if (!match) return null;
 
     const value = Number(match[1]);
@@ -105,14 +114,14 @@ function parseUnitConversion(line, decimalPlaces) {
 
 const TIMEZONE_MAP = {
     'pst': 'America/Los_Angeles',
-    'pdt': 'America/Los_Angeles', // Pacific Daylight Time
+    'pdt': 'America/Los_Angeles',
     'est': 'America/New_York',
-    'edt': 'America/New_York', // Eastern Daylight Time
+    'edt': 'America/New_York',
     'cst': 'America/Chicago',
-    'cdt': 'America/Chicago', // Central Daylight Time
+    'cdt': 'America/Chicago',
     'mst': 'America/Denver',
-    'mdt': 'America/Denver', // Mountain Daylight Time
-    'hkt': 'Asia/Hong_Kong', // Hong Kong Time
+    'mdt': 'America/Denver',
+    'hkt': 'Asia/Hong_Kong',
     'gmt': 'Etc/GMT',
     'utc': 'Etc/UTC',
     'london': 'Europe/London',
@@ -127,9 +136,9 @@ const TIMEZONE_MAP = {
     'denver': 'America/Denver',
     'dubai': 'Asia/Dubai',
     'moscow': 'Europe/Moscow',
-    'beijing': 'Asia/Shanghai', // Beijing is in Shanghai TZ
+    'beijing': 'Asia/Shanghai',
     'singapore': 'Asia/Singapore',
-    '': Intl.DateTimeFormat().resolvedOptions().timeZone // Default to local timezone if not specified
+    '': Intl.DateTimeFormat().resolvedOptions().timeZone
 };
 
 let currentPPI = 96;
@@ -145,7 +154,6 @@ function preprocessNaturalLanguage(line) {
 
     expr = expr.replace(/^(what is|what's|calculate|compute|tell me|what is the)\s*/, '');
 
-    // Handle currency symbols.
     expr = expr.replace(/([$€£¥])\s*(\d+\.?\d*)/g, (match, symbol, number) => {
         const symbolMap = { '$': 'USD', '€': 'EUR', '£': 'GBP', '¥': 'JPY' };
         return `${number} ${symbolMap[symbol] || ''}`.trim();
@@ -154,7 +162,13 @@ function preprocessNaturalLanguage(line) {
 
     expr = expr.replace(/(\d+\.?\d*)\s*k\b/g, '$1*1000');
     expr = expr.replace(/(\d+\.?\d*)\s*m\b/g, '$1*1000000');
-    expr = expr.replace(/(\d+\.?\d*)\s*billion\b/g, '$1*1000000000');
+    expr = expr.replace(/(\d+\.?\d*)\s*(?:million|millions|mil|mils)\b/g, '$1*1000000');
+    expr = expr.replace(/(\d+\.?\d*)\s*(?:billion|billions|bil|bils)\b/g, '$1*1000000000');
+    expr = expr.replace(/(\d+\.?\d*)\s*(?:trillion|trillions|tril|trils)\b/g, '$1*1000000000000');
+    expr = expr.replace(/(\d+\.?\d*)\s*(?:quadrillion|quadrillions|quadril|quadrils)\b/g, '$1*1000000000000000');
+    expr = expr.replace(/(\d+\.?\d*)\s*(?:quintillion|quintillions|quintil|quintils)\b/g, '$1*1000000000000000000');
+
+    expr = expr.replace(/\b(sqrt|abs|ceil|floor|round|sign|exp|log10|log|ln|sin|cos|tan|asin|acos|atan)\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\b/gi, '$1($2)');
 
     expr = expr.replace(/\bsubtract\s+(.+?)\s+from\s+(.+?)\b/gi, (_, a, b) => `(${b.trim()} - ${a.trim()})`);
     expr = expr.replace(/\bsum of\s+(.+?)\s+and\s+(.+?)\b/gi, (_, a, b) => `(${a.trim()} + ${b.trim()})`);
@@ -172,23 +186,17 @@ function preprocessNaturalLanguage(line) {
     expr = expr.replace(/\|/g, ' | ');
     expr = expr.replace(/\smod\s/g, ' % ');
 
-    expr = expr.replace(/(\d|\w)\s*\((.+?)\)/g, (match, p1, p2) => `${p1}*(${p2})`);
+    expr = expr.replace(/(\d|\))\s*\(/g, '$1*(');
 
-    // 4. Handle simpler word-based operators.
-    expr = expr.replace(/\s(in|into|as)\s/g, ' to '); // Convert "in", "into", "as" to "to" for math.js
+    expr = expr.replace(/(\d+(?:\.\d+)?)\s*%\s+of\s+/g, '($1 / 100) * ');
+
+    expr = expr.replace(/\s(in|into|as)\s/g, ' to ');
 
     expr = expr.replace(/\bpi\b/g, 'pi');
     expr = expr.replace(/\be\b/g, 'e');
 
     return expr;
 }
-
-/**
- * Parses date-related calculations (e.g., "5 days from today").
- * Returns a Date object if a valid date calculation is found, otherwise null.
- * @param {string} line - The input line.
- * @returns {Date|null} A Date object or null.
- */
 
 function parseStandaloneDate(line) {
     const trimmedLine = line.trim();
@@ -198,12 +206,9 @@ function parseStandaloneDate(line) {
         return null;
     }
 
-    // Heuristic: Check if the input string contains common date separators or month names
-    const hasSeparator = /[/-]/.test(trimmedLine);
+    const hasSeparator = /^(?:\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d{4}[/-]\d{1,2}[/-]\d{1,2})$/.test(trimmedLine);
     const hasMonthName = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(trimmedLine);
-    const looksLikeYear = /\b\d{4}\b/.test(trimmedLine);
-
-    if (!hasSeparator && !hasMonthName && !looksLikeYear && !trimmedLine.toLowerCase().includes('today') && !trimmedLine.toLowerCase().includes('now')) {
+    if (!hasSeparator && !hasMonthName && !trimmedLine.toLowerCase().includes('today') && !trimmedLine.toLowerCase().includes('now')) {
         return null;
     }
 
@@ -211,14 +216,12 @@ function parseStandaloneDate(line) {
 }
 
 function parseDateMath(line) {
-    // This regex is for direct date calculations like "5 days from today" or "5 days from 5/20/2024"
     const regex = /(\d+)\s+(days?|weeks?|months?|years?)\s+(from|before)\s+(today|now|(\d{1,2}[\/-]\d{1,2}([\/-]\d{2,4})?|\w+\s+\d{1,2}\s+\d{4}))/i;
     const match = line.match(regex);
     if (!match) return null;
 
     const [, amountStr, unit, direction, baseDateStr] = match;
     const amount = parseInt(amountStr, 10);
-    // Attempt to parse the base date string. new Date() is quite robust.
     const baseDate = (baseDateStr.toLowerCase() === 'today' || baseDateStr.toLowerCase() === 'now') ? new Date() : new Date(baseDateStr);
 
     if (isNaN(baseDate.getTime())) return null;
@@ -234,33 +237,41 @@ function parseDateMath(line) {
         default:
             return null;
     }
-    return newDate; // Return the Date object
+    return newDate;
 }
 
 function parseDateOffset(line) {
     const datePattern = '(?:today|now|date|\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}|(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\s+\\d{1,2},?\\s+\\d{4})';
-    const regex = new RegExp(`^(${datePattern})\\s*(plus|add|minus|subtract|\\+|-)\\s*(\\d+)\\s*(days?|weeks?|months?|years?)$`, 'i');
-    const match = line.trim().match(regex);
-    if (!match) return null;
+    const unitPattern = '(?:days?|d|weeks?|wks?|wk|months?|mos?|mo|years?|yrs?|yr)';
+    const trimmedLine = line.trim();
+    const agoMatch = trimmedLine.match(new RegExp(`^(\\d+)\\s*(${unitPattern})\\s+ago$`, 'i'));
+    const offsetMatch = trimmedLine.match(new RegExp(`^(${datePattern})\\s*(plus|add|minus|subtract|\\+|-)\\s*(\\d+)\\s*(${unitPattern})?$`, 'i'));
 
-    const [, baseDateText, operator, amountText, unitText] = match;
-    const baseDate = /^(today|now|date)$/i.test(baseDateText) ? new Date() : new Date(baseDateText);
-    if (Number.isNaN(baseDate.getTime())) return null;
+    const baseDate = agoMatch
+        ? new Date()
+        : offsetMatch && (/^(today|now|date)$/i.test(offsetMatch[1]) ? new Date() : new Date(offsetMatch[1]));
+    if (!baseDate || Number.isNaN(baseDate.getTime())) return null;
 
     const result = new Date(baseDate.getTime());
-    const amount = Number(amountText) * (/^(minus|subtract|-)$/i.test(operator) ? -1 : 1);
+    const amount = agoMatch
+        ? -Number(agoMatch[1])
+        : Number(offsetMatch[3]) * (/^(minus|subtract|-)$/i.test(offsetMatch[2]) ? -1 : 1);
+    const unitText = agoMatch ? agoMatch[2] : (offsetMatch[4] || 'days');
     switch (unitText.toLowerCase().replace(/s$/, '')) {
         case 'day': result.setDate(result.getDate() + amount); break;
+        case 'd': result.setDate(result.getDate() + amount); break;
         case 'week': result.setDate(result.getDate() + amount * 7); break;
+        case 'wk': result.setDate(result.getDate() + amount * 7); break;
         case 'month': result.setMonth(result.getMonth() + amount); break;
+        case 'mo': result.setMonth(result.getMonth() + amount); break;
         case 'year': result.setFullYear(result.getFullYear() + amount); break;
+        case 'yr': result.setFullYear(result.getFullYear() + amount); break;
         default: return null;
     }
     return result;
 }
 
 function parseVariableDateArithmetic(line, parser) {
-    // Regex to match patterns like "variableName +/- N unit"
     const regex = /^([a-zA-Z_][a-zA-Z0-9_]*)\s*([+\-])\s*(\d+)\s+(days?|weeks?|months?|years?)$/i;
     const match = line.match(regex);
 
@@ -271,7 +282,10 @@ function parseVariableDateArithmetic(line, parser) {
     const amount = parseInt(amountStr, 10);
     const multiplier = (operator === '-') ? -1 : 1;
 
-    const baseDate = parser.get(variableNameLower);
+    let baseDate = parser.get(variableNameLower);
+    if (!(baseDate instanceof Date)) {
+        try { baseDate = parser.evaluate(variableNameLower); } catch (error) { return null; }
+    }
 
     if (!(baseDate instanceof Date)) return null;
 
@@ -287,21 +301,61 @@ function parseVariableDateArithmetic(line, parser) {
     return newDate;
 }
 
+function parseDateDurationVariableArithmetic(line, parser) {
+    const match = line.trim().match(/^(today|now|date|[a-zA-Z_][a-zA-Z0-9_]*)\s*([+\-])\s*([a-zA-Z_][a-zA-Z0-9_]*)$/i);
+    if (!match) return null;
+
+    const [, baseName, operator, durationName] = match;
+    let baseDate;
+    if (/^(today|now|date)$/i.test(baseName)) {
+        baseDate = new Date();
+    } else {
+        try { baseDate = parser.get(baseName.toLowerCase()) ?? parser.evaluate(baseName.toLowerCase()); } catch (error) { return null; }
+    }
+    if (!(baseDate instanceof Date)) return null;
+
+    let duration;
+    try { duration = parser.get(durationName.toLowerCase()) ?? parser.evaluate(durationName.toLowerCase()); } catch (error) { return null; }
+    if (!(duration instanceof math.Unit)) return null;
+
+    const direction = operator === '-' ? -1 : 1;
+    const result = new Date(baseDate.getTime());
+    const convertDuration = (...units) => {
+        for (const unit of units) {
+            try { return duration.toNumber(unit); } catch { continue; }
+        }
+        return Number.NaN;
+    };
+
+    const years = convertDuration('yr', 'year');
+    if (Number.isFinite(years) && Math.abs(years) >= 1) {
+        result.setFullYear(result.getFullYear() + years * direction);
+        return result;
+    }
+    const months = convertDuration('month');
+    if (Number.isFinite(months) && Math.abs(months) >= 1) {
+        result.setMonth(result.getMonth() + months * direction);
+        return result;
+    }
+    const days = convertDuration('day');
+    if (!Number.isFinite(days)) return null;
+    result.setDate(result.getDate() + days * direction);
+    return result;
+}
+
 function parseCurrentTimeAndDate(line) {
     const lowerLine = line.toLowerCase().trim();
-    let timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Default to local
+    let timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    // Function to get formatted time/date string
     const formatDateTime = (date, options) => {
         try {
             return date.toLocaleString('en-US', { ...options, timeZone: timeZone });
         } catch (e) {
             console.error("Error formatting date/time with timezone:", e);
-            return date.toLocaleString('en-US', options); // Fallback to local if TZ fails
+            return date.toLocaleString('en-US', options);
         }
     };
 
-    // Check for explicit timezone prefix (e.g., "PST time", "New York time")
     const tzPrefixMatch = /^(.*?)\s+(time|date|now)$/.exec(lowerLine);
     if (tzPrefixMatch) {
         const location = tzPrefixMatch[1].trim();
@@ -310,8 +364,7 @@ function parseCurrentTimeAndDate(line) {
         if (foundTzKey) {
             timeZone = TIMEZONE_MAP[foundTzKey];
         } else {
-            // Attempt to find a timezone by partial name match
-            const directTz = Object.values(TIMEZONE_MAP).find(tz => tz.toLowerCase().includes(location.replace(/\s/g, '_'))); // Replace spaces for common TZ names
+            const directTz = Object.values(TIMEZONE_MAP).find(tz => tz.toLowerCase().includes(location.replace(/\s/g, '_')));
             if (directTz) {
                 timeZone = directTz;
             }
@@ -326,7 +379,6 @@ function parseCurrentTimeAndDate(line) {
         }
     }
 
-    // Check for "Time in Location" suffix
     const tzSuffixMatch = /^(time|date|now)\s+in\s+(.*)$/.exec(lowerLine);
     if (tzSuffixMatch) {
         const matchedCommand = tzSuffixMatch[1];
@@ -350,7 +402,6 @@ function parseCurrentTimeAndDate(line) {
         }
     }
 
-    // Check for simple commands without timezone
     if (lowerLine === 'date' || lowerLine === 'today') {
         return new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
     } else if (lowerLine === 'time') {
@@ -364,9 +415,6 @@ function parseCurrentTimeAndDate(line) {
 
 function parseTimeZoneConversion(line) {
     const lowerLine = line.toLowerCase().trim();
-    // Regex: (time) (from_tz_abbr) in (to_tz_abbr)
-    // Example: "2:30 pm HKT in Berlin"
-    // Capture time string, optional AM/PM, source TZ abbreviation, target TZ abbreviation
     const regex = /^(\d{1,2}(:\d{2})?\s*(?:am|pm)?)\s+([a-z\/_]+)\s+in\s+([a-z\/_]+)$/i;
     const match = lowerLine.match(regex);
 
@@ -382,14 +430,10 @@ function parseTimeZoneConversion(line) {
     }
 
     try {
-        // Create a dummy date for today in the source timezone
         const nowInSourceTz = new Date().toLocaleString('en-US', { timeZone: sourceTimeZone, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         const [datePart, timePart] = nowInSourceTz.split(', ');
         const [month, day, year] = datePart.split('/').map(Number);
 
-        // Construct a Date object using the provided time string and today's date in the source TZ
-        // This is still tricky as Date.parse is not fully TZ-aware for input.
-        // A more robust solution would use a dedicated library like Luxon or Moment.js.
         const combinedDateTimeStr = `${month}/${day}/${year} ${timeStr}`;
         const parsedDate = new Date(combinedDateTimeStr);
 
@@ -398,7 +442,6 @@ function parseTimeZoneConversion(line) {
             return null;
         }
 
-        // Format this parsed date into the target timezone
         const formatter = new Intl.DateTimeFormat('en-US', {
             hour: '2-digit',
             minute: '2-digit',
@@ -421,7 +464,7 @@ function parseAssignment(line, parser, decimalPlaces) {
     if (!match) return null;
 
     const originalVariableName = match[1];
-    const variableNameForScope = originalVariableName.toLowerCase(); // Convert to lowercase for math.js scope
+    const variableNameForScope = originalVariableName.toLowerCase();
     let valueExpression = match[2].trim();
 
     let assignedValue;
@@ -444,7 +487,6 @@ function parseAssignment(line, parser, decimalPlaces) {
     }
     const specialTimeDate = parseCurrentTimeAndDate(valueExpression);
     if (specialTimeDate !== null) {
-        // If it's a current time/date string, store it as a string
         assignedValue = specialTimeDate;
         outputString = `${originalVariableName}: ${assignedValue}`;
     } else {
@@ -480,7 +522,6 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
     const lowerLine = line.toLowerCase().trim();
     let resultValue = null;
 
-    // Helper to evaluate an expression safely
     const safeEvaluate = (expr) => {
         try {
             return parser.evaluate(preprocessNaturalLanguage(expr));
@@ -490,7 +531,6 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
         }
     };
 
-    // 1. "X% of Y"
     let match = lowerLine.match(/^(\d+\.?\d*)\s*%\s+of\s+(.*)$/);
     if (match) {
         const percentage = parseFloat(match[1]) / 100;
@@ -500,7 +540,6 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
         }
     }
 
-    // 2. "X% on Y" (Adding percentage)
     if (resultValue === null) {
         match = lowerLine.match(/^(\d+\.?\d*)\s*%\s+on\s+(.*)$/);
         if (match) {
@@ -512,7 +551,6 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
         }
     }
 
-    // 3. "X% off Y" (Subtracting percentage)
     if (resultValue === null) {
         match = lowerLine.match(/^(\d+\.?\d*)\s*%\s+off\s+(.*)$/);
         if (match) {
@@ -524,7 +562,6 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
         }
     }
 
-    // 4. "X as a % of Y" (Percentage value of one relative to another)
     if (resultValue === null) {
         match = lowerLine.match(/^(.*?)\s+as\s+a\s*%\s+of\s+(.*)$/);
         if (match) {
@@ -533,16 +570,15 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
             if (part !== null && whole !== null && (typeof part === 'number' || part instanceof math.Unit) && (typeof whole === 'number' || whole instanceof math.Unit)) {
                 try {
                     const ratio = math.divide(part, whole);
-                    resultValue = math.multiply(ratio, 100); // Result in percentage points
+                    resultValue = math.multiply(ratio, 100);
                     if (typeof resultValue === 'number') {
                         return `${math.format(resultValue, { notation: 'fixed', precision: decimalPlaces })}%`;
                     }
-                } catch (e) { /* Division by zero or incompatible units */ }
+                } catch {}
             }
         }
     }
 
-    // 5. "X as a % on Y" (Percentage addition of one value relative to another)
     if (resultValue === null) {
         match = lowerLine.match(/^(.*?)\s+as\s+a\s*%\s+on\s+(.*)$/);
         if (match) {
@@ -556,12 +592,11 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
                     if (typeof resultValue === 'number') {
                         return `${math.format(resultValue, { notation: 'fixed', precision: decimalPlaces })}%`;
                     }
-                } catch (e) { /* Division by zero or incompatible units */ }
+                } catch {}
             }
         }
     }
 
-    // 6. "X as a % off Y" (Percentage subtraction of one value relative to another)
     if (resultValue === null) {
         match = lowerLine.match(/^(.*?)\s+as\s+a\s*%\s+off\s+(.*)$/);
         if (match) {
@@ -575,12 +610,11 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
                     if (typeof resultValue === 'number') {
                         return `${math.format(resultValue, { notation: 'fixed', precision: decimalPlaces })}%`;
                     }
-                } catch (e) { /* Division by zero or incompatible units */ }
+                } catch {}
             }
         }
     }
 
-    // 7. "X% of what is Y" (Value by percent part)
     if (resultValue === null) {
         match = lowerLine.match(/^(\d+\.?\d*)\s*%\s+of\s+what\s+is\s+(.*)$/);
         if (match) {
@@ -592,7 +626,6 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
         }
     }
 
-    // 8. "X% on what is Y" (Value by percent addition)
     if (resultValue === null) {
         match = lowerLine.match(/^(\d+\.?\d*)\s*%\s+on\s+what\s+is\s+(.*)$/);
         if (match) {
@@ -604,7 +637,6 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
         }
     }
 
-    // 9. "X% off what is Y" (Value by percent subtraction)
     if (resultValue === null) {
         match = lowerLine.match(/^(\d+\.?\d*)\s*%\s+off\s+what\s+is\s+(.*)$/);
         if (match) {
@@ -626,29 +658,21 @@ function parsePercentageOperations(line, parser, decimalPlaces) {
 function parseCssScreenUnits(line, parser, decimalPlaces) {
     const lowerLine = line.toLowerCase().trim();
 
-    // Handle `ppi = X` assignment
     const ppiAssignmentMatch = lowerLine.match(/^ppi\s*[:=]\s*(\d+\.?\d*)$/);
     if (ppiAssignmentMatch) {
         const newPpi = parseFloat(ppiAssignmentMatch[1]);
         if (!isNaN(newPpi) && newPpi > 0) {
             currentPPI = newPpi;
-            // Redefine 'px' unit based on new PPI for 'in' conversion
-            // 1 inch = currentPPI pixels
-            // 1px = (1/currentPPI) inch
-            // math.js base for length is meter. 1 inch = 0.0254 meters
-            // So 1px = (0.0254 / currentPPI) meters
             defineCssUnits();
             return `PPI set to ${math.format(currentPPI, { notation: 'fixed', precision: decimalPlaces })}`;
         }
     }
 
-    // Handle `em = X` assignment (e.g., `em = 16px`)
     const emBaseAssignmentMatch = lowerLine.match(/^em\s*[:=]\s*(.*)$/);
     if (emBaseAssignmentMatch) {
         try {
             const emBaseValue = parser.evaluate(preprocessNaturalLanguage(emBaseAssignmentMatch[1]));
             if (emBaseValue instanceof math.Unit) {
-                // Redefine 'em' unit based on the new base value
                 math.createUnit('em', { definition: emBaseValue }, { override: true });
                 return `EM base set to ${math.format(emBaseValue, { notation: 'fixed', precision: decimalPlaces })}`;
             }
@@ -657,7 +681,7 @@ function parseCssScreenUnits(line, parser, decimalPlaces) {
         }
     }
 
-    return null; // Not a CSS/Screen unit specific command
+    return null;
 }
 
 export function evaluateInput(fullInputText, decimalPlaces) {
@@ -676,17 +700,16 @@ export function evaluateInput(fullInputText, decimalPlaces) {
         }
         let result = '';
         try {
-            // Priority 1: Sum/Average commands (e.g., "sum", "average")
             const lowerLine = line.toLowerCase().trim();
             if (lowerLine === 'sum' || lowerLine === 'total') {
                 const sum = previousResults.reduce((acc, val) => {
-                    if (typeof acc === 'string' || typeof val === 'string') return acc; // Skip strings
+                    if (typeof acc === 'string' || typeof val === 'string') return acc;
                     if (val instanceof math.Unit && acc instanceof math.Unit) {
-                        try { return math.add(acc, val); } catch (e) { return acc; } // Add compatible units
+                        try { return math.add(acc, val); } catch (e) { return acc; }
                     }
                     if (typeof val === 'number' && typeof acc === 'number') return acc + val;
                     return acc;
-                }, 0); // Start with 0 for sum
+                }, 0);
                 result = math.format(sum, { notation: 'fixed', precision: decimalPlaces });
             } else if (lowerLine === 'average' || lowerLine === 'avg') {
                 const numbers = previousResults.filter(val => typeof val === 'number' || val instanceof math.Unit);
@@ -704,78 +727,65 @@ export function evaluateInput(fullInputText, decimalPlaces) {
                     result = 'N/A';
                 }
             }
-            // Priority 2: CSS/Screen Unit settings (e.g., "ppi = 326", "em = 16px")
             else {
                 const cssUnitResult = parseCssScreenUnits(line, parser, decimalPlaces);
                 if (cssUnitResult !== null) {
                     result = cssUnitResult;
                 }
-                // Priority 3: Current Time/Date/Now (e.g., "date", "time", "now", "PST time")
                 else {
                     const currentTimeDateResult = parseCurrentTimeAndDate(line);
                     if (currentTimeDateResult !== null) {
                         result = currentTimeDateResult;
                     }
-                    // Priority 4: Time Zone Conversion (e.g., "2:30 pm HKT in Berlin")
                     else {
                         const timeZoneConversionResult = parseTimeZoneConversion(line);
                         if (timeZoneConversionResult !== null) {
                             result = timeZoneConversionResult;
                         }
-                        // Priority 5: Variable assignment (e.g., Price: $10, Date = today/5/20/2024)
                         else {
                             const assignmentResult = parseAssignment(line, parser, decimalPlaces);
                             if (assignmentResult !== null) {
                                 result = assignmentResult;
                             }
-                            // Priority 6: Date offsets (e.g., 06/29/2026 - 20 days, today plus 1 year)
                             else {
                                 const dateOffsetResult = parseDateOffset(line);
                                 if (dateOffsetResult instanceof Date) {
                                     result = dateOffsetResult.toDateString();
                                 }
-                                // Priority 7: Standalone date (e.g., 5/20/2024, May 20 2024)
                                 else {
                                     const standaloneDateResult = parseStandaloneDate(line);
                                     if (standaloneDateResult instanceof Date) {
                                         result = standaloneDateResult.toDateString();
                                     }
-                                    // Priority 8: Direct relative date calculation (e.g., 5 days from today/5/20/2024)
                                     else {
                                         const dateMathResult = parseDateMath(line);
                                         if (dateMathResult instanceof Date) {
                                             result = dateMathResult.toDateString();
                                         }
-                                        // Priority 9: Date arithmetic involving a variable (e.g., MyDate + 5 days)
                                         else {
-                                            const varDateArithmeticResult = parseVariableDateArithmetic(line, parser);
+                                            const varDateArithmeticResult = parseDateDurationVariableArithmetic(line, parser) || parseVariableDateArithmetic(line, parser);
                                             if (varDateArithmeticResult !== null) {
-                                                result = varDateArithmeticResult;
+                                                result = varDateArithmeticResult.toDateString();
                                             }
-                                            // Priority 10: Percentage Operations (e.g., "20% of $10")
                                             else {
                                                 const percentageResult = parsePercentageOperations(line, parser, decimalPlaces);
                                                 if (percentageResult !== null) {
                                                     result = percentageResult;
                                                 } else {
-                                                    // Priority 11: Unit conversions (e.g., 5ft to cm, 6 deg F in C)
                                                     const conversionResult = parseUnitConversion(line, decimalPlaces);
                                                     if (conversionResult !== null) {
                                                         result = conversionResult;
                                                     } else {
-                                                        // Priority 12: General math expression (e.g., Price * Quantity)
-                                                        let processedLine = preprocessNaturalLanguage(line);
+                                                    let processedLine = preprocessNaturalLanguage(line);
+                                                    processedLine = processedLine.replace(/\b(?:sci|scientific)\b/g, '').trim();
 
-                                                // Handle 'prev' token
                                                 if (previousResults.length > 0 && processedLine.includes('prev')) {
                                                     const lastResult = previousResults[previousResults.length - 1];
-                                                    // Ensure 'prev' is replaced with a valid math.js expression
                                                     if (typeof lastResult === 'number' || lastResult instanceof math.Unit) {
                                                         processedLine = processedLine.replace(/\bprev\b/g, `(${math.format(lastResult, { notation: 'fixed', precision: 10 })})`);
                                                     } else if (lastResult instanceof Date) {
-                                                        processedLine = processedLine.replace(/\bprev\b/g, `"${lastResult.toISOString()}"`); // Use ISO string, might not be evaluable.
+                                                        processedLine = processedLine.replace(/\bprev\b/g, `"${lastResult.toISOString()}"`);
                                                     } else {
-                                                        // Fallback for other types, might lead to errors
                                                         processedLine = processedLine.replace(/\bprev\b/g, `"${lastResult}"`);
                                                     }
                                                 }
@@ -783,15 +793,13 @@ export function evaluateInput(fullInputText, decimalPlaces) {
                                                     const evalResult = parser.evaluate(processedLine);
 
                                                         if (typeof evalResult !== 'function') {
-                                                    // Handle scientific notation formatting if 'sci' or 'scientific' is in the line
                                                     let notation = 'fixed';
                                                     if (line.toLowerCase().includes('sci') || line.toLowerCase().includes('scientific')) {
-                                                        notation = 'scientific';
+                                                        notation = 'exponential';
                                                     }
-                                                        result = math.format(evalResult, {
-                                                        notation: notation,
-                                                        precision: decimalPlaces
-                                                    });
+                                                        result = notation === 'exponential' && typeof evalResult === 'number'
+                                                            ? evalResult.toExponential(decimalPlaces)
+                                                            : math.format(evalResult, { notation, precision: decimalPlaces });
                                                         } else {
                                                             result = 'Function defined';
                                                         }
@@ -812,16 +820,19 @@ export function evaluateInput(fullInputText, decimalPlaces) {
         }
         results.push(result);
 
-        if (result !== '❌' && result !== '' && result !== 'Function defined') { // Only store successful, meaningful results
+        if (result !== '❌' && result !== '' && result !== 'Function defined') {
+            const assignmentMatch = line.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*[:=]/);
+            if (assignmentMatch) {
+                const assignedValue = parser.get(assignmentMatch[1].toLowerCase());
+                previousResults.push(assignedValue === undefined ? result : assignedValue);
+                continue;
+            }
             try {
-                // Attempt to re-evaluate the line to get the actual math.js object/number
-                // This is important because 'result' might be a formatted string.
                 const originalEval = parser.evaluate(preprocessNaturalLanguage(line));
                 if (typeof originalEval !== 'function') {
                     previousResults.push(originalEval);
                 }
             } catch (e) {
-                // If the line was a date string or other non-math.js evaluable, store the string.
                 previousResults.push(result);
             }
         }

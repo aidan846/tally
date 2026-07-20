@@ -5,11 +5,11 @@ module.exports = {
     'mg': {ratio: 0.001},
     'g': {ratio: 1},
     'kg': {ratio: 1000},
-    't': {ratio: 1e6}, # metric ton
-    'oz': {ratio: 28.3495}, # 1 ounce = 28.3495 grams
-    'lb': {ratio: 453.592}, # 1 pound = 453.592 grams
-    'st': {ratio: 6350.29}, # 1 stone = 6350.29 grams
-    'ton': {ratio: 907185} # US short ton
+    't': {ratio: 1e6},
+    'oz': {ratio: 28.3495},
+    'lb': {ratio: 453.592},
+    'st': {ratio: 6350.29},
+    'ton': {ratio: 907185}
   },
   aliases: {
     'milligram': 'mg',

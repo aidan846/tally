@@ -1,8 +1,9 @@
 export let decimalPlaces = 2;
+const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
 function applyTheme(theme) {
     if (theme === 'auto') {
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const systemPrefersDark = systemThemeQuery.matches;
         document.body.classList.toggle('light', !systemPrefersDark);
     } else {
         document.body.classList.toggle('light', theme === 'light');
@@ -10,41 +11,35 @@ function applyTheme(theme) {
 }
 
 export async function initializeSettings() {
-    // Get saved config
     const config = await window.electronAPI.getConfig();
     const themeSelect = document.getElementById('theme-select');
     const decimalsSelect = document.getElementById('decimals-select');
 
-    // Apply saved theme
-    if (config.theme) {
-        applyTheme(config.theme);
-        themeSelect.value = config.theme;
-        // if 'auto' is selected
-        if (config.theme === 'auto') {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme('auto'));
-        }
-    }
+    const initialTheme = config.theme || themeSelect.value;
+    themeSelect.value = initialTheme;
+    applyTheme(initialTheme);
 
-    // Apply saved decimal
     if (typeof config.decimals === 'number') {
         decimalPlaces = config.decimals;
         decimalsSelect.value = config.decimals.toString();
     }
 
-    // Listen for theme changes from the dropdown
     themeSelect.addEventListener('change', async (e) => {
         const theme = e.target.value;
         applyTheme(theme);
-        await window.electronAPI.setConfig({ theme }); // Save setting
+        await window.electronAPI.setConfig({ theme });
     });
 
-    // Listen for decimals changes from the dropdown
+    systemThemeQuery.addEventListener('change', () => {
+        if (themeSelect.value === 'auto') applyTheme('auto');
+    });
+
     decimalsSelect.addEventListener('change', async (e) => {
         const decimals = parseInt(e.target.value, 10);
         decimalPlaces = decimals;
         
         document.dispatchEvent(new Event('tally:settings-changed'));
-        await window.electronAPI.setConfig({ decimals }); // Save setting
+        await window.electronAPI.setConfig({ decimals });
     });
 
     const settingsButton = document.getElementById('settings-button');
@@ -67,6 +62,16 @@ export async function initializeSettings() {
     });
     window.addEventListener('blur', closeSettings);
     document.addEventListener('keydown', event => {
-        if (event.key === 'Escape') closeSettings();
+        if (event.key === 'Escape') {
+            closeSettings();
+            return;
+        }
+        if (!settingsPanel.hidden) {
+            event.preventDefault();
+            closeSettings();
+            if (event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
+                document.dispatchEvent(new CustomEvent('tally:begin-input', { detail: event.key }));
+            }
+        }
     });
 }
