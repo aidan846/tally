@@ -25,14 +25,14 @@ function parseDateReference(value, now) {
 }
 
 export function parseStockReference(value, now = new Date()) {
-    const match = value.trim().match(/^([A-Z][A-Z0-9.-]{0,9})(?:\s+(.+))?$/);
+    const match = value.trim().match(/^(\^?[a-z][a-z0-9.-]{0,9})(?:\s+(.+))?$/i);
     if (!match) return null;
 
-    const symbol = match[1];
+    const symbol = match[1].toUpperCase();
     const detail = (match[2] || '').trim();
     const normalized = detail.toLowerCase();
 
-    if (!detail || normalized === 'now') return { symbol, field: 'price', date: null };
+    if (!detail || normalized === 'now' || normalized === 'stock') return { symbol, field: 'price', date: null };
     if (normalized === 'high today') return { symbol, field: 'high', date: null };
     if (normalized === 'low today') return { symbol, field: 'low', date: null };
     if (normalized === 'open' || normalized === 'open price') return { symbol, field: 'open', date: null };
@@ -54,6 +54,7 @@ export function parseStockExpression(value, now = new Date()) {
         return left && right ? { source, operator: 'subtract', operands: [left, right] } : null;
     }
 
+    if (/^(?:sum|total|average|avg|mean|median|date|today|time|now|weather|temperature|temp|random|sqrt|abs|ceil|floor|round)$/i.test(expression)) return null;
     const reference = parseStockReference(expression, now);
     return reference ? { source, operator: null, operands: [reference] } : null;
 }

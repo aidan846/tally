@@ -4,6 +4,9 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
+    extendInfo: {
+      NSLocationWhenInUseUsageDescription: 'Tally uses your location when you request local weather.',
+    },
   },
   rebuildConfig: {},
   makers: [

@@ -143,3 +143,115 @@ export function parseDateDurationVariableArithmetic(line, parser) {
     return result;
 }
 
+const MONTHS = {
+    jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3,
+    may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7,
+    sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10,
+    dec: 11, december: 11
+};
+
+function parseLooseDate(value, now) {
+    const normalized = value.trim().replace(/,/g, '').toLowerCase();
+    if (normalized === 'today' || normalized === 'now') return { date: new Date(now), hasYear: false, isNow: normalized === 'now' };
+
+    const match = normalized.match(/^([a-z]+)\s+(\d{1,2})(?:\s+(\d{4}))?$/)
+        || normalized.match(/^(\d{1,2})\s+([a-z]+)(?:\s+(\d{4}))?$/);
+    if (!match) return null;
+
+    const monthFirst = /^[a-z]/.test(match[1]);
+    const month = MONTHS[monthFirst ? match[1] : match[2]];
+    const day = Number(monthFirst ? match[2] : match[1]);
+    const yearText = match[3];
+    if (month === undefined || day < 1 || day > 31) return null;
+    const date = new Date(Number(yearText || now.getFullYear()), month, day, 12);
+    if (date.getMonth() !== month || date.getDate() !== day) return null;
+    return { date, hasYear: Boolean(yearText), isNow: false };
+}
+
+function addWorkdays(date, amount) {
+    const direction = Math.sign(amount);
+    let remaining = Math.abs(amount);
+    while (remaining > 0) {
+        date.setDate(date.getDate() + direction);
+        if (date.getDay() !== 0 && date.getDay() !== 6) remaining -= 1;
+    }
+}
+
+function addDurations(date, value) {
+    const matches = [...value.matchAll(/(\d+)\s*(workdays?|seconds?|minutes?|hours?|days?|weeks?|months?|years?)/gi)];
+    if (!matches.length || matches.map(match => match[0]).join(' ').replace(/\s+/g, ' ').trim() !== value.replace(/\s+/g, ' ').trim()) return false;
+    for (const match of matches) {
+        const amount = Number(match[1]);
+        const unit = match[2].toLowerCase().replace(/s$/, '');
+        if (unit === 'workday') addWorkdays(date, amount);
+        if (unit === 'second') date.setSeconds(date.getSeconds() + amount);
+        if (unit === 'minute') date.setMinutes(date.getMinutes() + amount);
+        if (unit === 'hour') date.setHours(date.getHours() + amount);
+        if (unit === 'day') date.setDate(date.getDate() + amount);
+        if (unit === 'week') date.setDate(date.getDate() + amount * 7);
+        if (unit === 'month') date.setMonth(date.getMonth() + amount);
+        if (unit === 'year') date.setFullYear(date.getFullYear() + amount);
+    }
+    return true;
+}
+
+function formatLooseDate(date, includeYear) {
+    const month = date.toLocaleDateString('en-US', { month: 'long' });
+    return `${date.getDate()} ${month}${includeYear ? ` ${date.getFullYear()}` : ''}`;
+}
+
+function calendarDifference(start, end) {
+    if (end < start) end.setFullYear(end.getFullYear() + 1);
+    const cursor = new Date(start);
+    let months = 0;
+    while (true) {
+        const next = new Date(cursor);
+        next.setMonth(next.getMonth() + 1);
+        if (next > end) break;
+        cursor.setTime(next.getTime());
+        months += 1;
+    }
+    const days = Math.round((end - cursor) / 86400000);
+    const weeks = Math.floor(days / 7);
+    const remainingDays = days % 7;
+    const parts = [];
+    if (months) parts.push(`${months} month${months === 1 ? '' : 's'}`);
+    if (weeks) parts.push(`${weeks} week${weeks === 1 ? '' : 's'}`);
+    if (remainingDays || !parts.length) parts.push(`${remainingDays} day${remainingDays === 1 ? '' : 's'}`);
+    return parts.join(' ');
+}
+
+export function parseCalendarExpression(line, now = new Date()) {
+    const normalized = line.trim();
+    const weeksBetween = normalized.match(/^weeks?\s+between\s+(.+?)\s+and\s+(.+)$/i);
+    if (weeksBetween) {
+        const start = parseLooseDate(weeksBetween[1], now);
+        const end = parseLooseDate(weeksBetween[2], now);
+        if (!start || !end) return null;
+        if (end.date < start.date) end.date.setFullYear(end.date.getFullYear() + 1);
+        const weeks = Math.round((end.date - start.date) / 604800000);
+        return `${weeks} week${weeks === 1 ? '' : 's'}`;
+    }
+
+    const range = normalized.match(/^(.+?)\s+to\s+(.+)$/i);
+    if (range) {
+        const start = parseLooseDate(range[1], now);
+        const end = parseLooseDate(range[2], now);
+        if (start && end) return calendarDifference(start.date, end.date);
+    }
+
+    const addition = normalized.match(/^(.+?)\s*\+\s*(.+)$/);
+    if (!addition) return null;
+    const base = parseLooseDate(addition[1], now);
+    if (!base) return null;
+    const result = new Date(base.date);
+    if (!addDurations(result, addition[2])) return null;
+    if (base.isNow && /(?:seconds?|minutes?|hours?)/i.test(addition[2])) {
+        return result.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            ...(/seconds?/i.test(addition[2]) ? { second: '2-digit' } : {})
+        }).replace(/\s?(AM|PM)$/, value => value.toLowerCase());
+    }
+    return formatLooseDate(result, base.hasYear);
+}

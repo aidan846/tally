@@ -1,8 +1,9 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, session, shell } = require('electron');
 const { ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { getStockData } = require('./stocks/provider.cjs');
+const { getWeatherData } = require('./weather/provider.cjs');
 
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -41,6 +42,51 @@ ipcMain.handle('set-config', (_event, newConfig) => {
 });
 
 ipcMain.handle('get-stock-data', (_event, query) => getStockData(query));
+ipcMain.handle('get-weather-data', (_event, query) => getWeatherData(query));
+ipcMain.handle('copy-text', (_event, value) => {
+  if (typeof value !== 'string') throw new Error('Invalid clipboard value');
+  clipboard.writeText(value);
+});
+
+ipcMain.handle('request-location-access', async event => {
+  if (config.locationAccessAccepted) return true;
+  const window = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showMessageBox(window, {
+    type: 'question',
+    title: 'Allow Location Access',
+    message: 'Allow Tally to use your location?',
+    detail: 'Tally uses it only when you request weather without naming a city.',
+    buttons: ['Allow Location', 'Not Now'],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true
+  });
+  if (result.response !== 0) return false;
+  config = { ...config, locationAccessAccepted: true };
+  saveConfig(config);
+  return true;
+});
+
+ipcMain.handle('show-location-settings', async event => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  const canOpenSettings = process.platform === 'darwin' || process.platform === 'win32';
+  const buttons = canOpenSettings ? ['Open Location Settings', 'Cancel'] : ['OK'];
+  const result = await dialog.showMessageBox(window, {
+    type: 'warning',
+    title: 'Location Access Needed',
+    message: 'Tally could not access your location.',
+    detail: 'Turn on Location Services and allow Tally, then try Weather again.',
+    buttons,
+    defaultId: 0,
+    cancelId: canOpenSettings ? 1 : 0,
+    noLink: true
+  });
+  if (!canOpenSettings || result.response !== 0) return;
+  const settingsUrl = process.platform === 'darwin'
+    ? 'x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices'
+    : 'ms-settings:privacy-location';
+  await shell.openExternal(settingsUrl);
+});
 
 function readUnitDefinitions() {
   const unitsDirPath = path.join(__dirname, 'units');
@@ -87,6 +133,10 @@ const createWindow = () => {
 };
 
 app.whenReady().then(() => {
+  const allowLocation = webContents => webContents?.getURL().startsWith('file://');
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => permission === 'geolocation' && allowLocation(webContents));
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => callback(permission === 'geolocation' && allowLocation(webContents)));
+
   createWindow();
 
   ipcMain.handle('get-unit-definitions', readUnitDefinitions);

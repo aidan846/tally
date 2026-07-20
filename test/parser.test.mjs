@@ -4,6 +4,9 @@ import { create, all } from 'mathjs';
 globalThis.math = create(all);
 math.createUnit('USD', { aliases: ['usd'] }, { override: true });
 math.createUnit('EUR', { definition: '1.2 USD', aliases: ['eur'] }, { override: true });
+math.createUnit('GBP', { definition: '1.25 USD', aliases: ['gbp'] }, { override: true });
+math.createUnit('AUD', { definition: '0.6666666667 USD', aliases: ['aud'] }, { override: true });
+math.createUnit('INR', { definition: '0.012 USD', aliases: ['inr'] }, { override: true });
 const { evaluateInput } = await import('../src/parser.js');
 
 const cases = [
@@ -46,7 +49,7 @@ const cases = [
     ['1 ft^3 to in^3', '1728.0000 in3'],
     ['60mph to km/h', '96.5606 km/h'],
     ['1MB to kb', '8192.0000 kb'],
-    ['20 usd to eur', '16.6667 eur'],
+    ['20 usd to eur', '16.67 EUR'],
     ['14.7psi to atm', '1.0003 atm'],
     ['1 atmosphere to kPa', '101.3250 kpa'],
     ['06/29/2026 - 20 days', 'Tue Jun 09 2026'],
@@ -64,7 +67,7 @@ console.log(`Passed ${cases.length} calculator and conversion cases.`);
 
 assert.deepEqual(
     evaluateInput('trip = 06/29/2026\ntrip + 2 weeks', 2),
-    ['trip: Mon Jun 29 2026', 'Mon Jul 13 2026'],
+    ['Mon Jun 29 2026', 'Mon Jul 13 2026'],
     'saved-date arithmetic'
 );
 
@@ -76,3 +79,38 @@ assert.match(
 
 assert.match(evaluateInput('10 days ago\n10 months ago', 2)[0], /^[A-Z][a-z]{2} /, 'days ago');
 assert.match(evaluateInput('10 days ago\n10 months ago', 2)[1], /^[A-Z][a-z]{2} /, 'months ago');
+
+const requestedCases = [
+    ['$10', '$10.00'],
+    ['₹10', '₹10.00'],
+    ['$10 gbp', '£8.00'],
+    ['$10 + 30gbp', '$47.50'],
+    ['$2 * 20gbp', '$50.00'],
+    ['300 usd in aud', '450.00 AUD'],
+    ['75 is what % of 600', '12.5000%'],
+    ['hours = 10', '10.0000'],
+    ['hourly rate = $20', '$20.00'],
+    ['hours = 10\nhourly rate = $20\nhours * hourly rate', '$200.00'],
+    ['John: 5 feet\njohn + 1 foot', '6.0000 feet'],
+    ['10 june + 3 weeks', '1 July'],
+    ['10 june + 3 weeks 4 days', '5 July'],
+    ['march 20 to june 5', '2 months 2 weeks 2 days'],
+    ['weeks between october 21 and december 2', '6 weeks'],
+    ['august 3 + 3 workdays', '6 August'],
+    ['midpoint between 10 and 20', '15.0000'],
+    ['average 1 2 3 4 5', '3.0000'],
+    ['mean 1 2 3 4 5', '3.0000'],
+    ['median 1 8 3 4 5', '4.0000']
+];
+
+for (const [input, expected] of requestedCases) {
+    assert.equal(evaluateInput(input, 4).at(-1), expected, input);
+}
+
+assert.match(evaluateInput('now + 20 minutes', 2)[0], /^\d{1,2}:\d{2}\s(?:am|pm)$/);
+assert.equal(evaluateInput('3:30 am NY to Hamburg', 2)[0], '9:30 am');
+assert.equal(evaluateInput('3:30 New York to Hamburg', 2)[0], '9:30 am');
+assert.equal(evaluateInput('14:20 New York to Beijing', 2)[0], '2:20 am');
+
+const randomResult = Number(evaluateInput('random number between 10 and 20', 2)[0]);
+assert.ok(Number.isInteger(randomResult) && randomResult >= 10 && randomResult <= 20);

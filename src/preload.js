@@ -8,7 +8,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setConfig: (newConfig) => ipcRenderer.invoke('set-config', newConfig),
 
   getUnitDefinitions: () => ipcRenderer.invoke('get-unit-definitions'),
-  getStockData: (query) => ipcRenderer.invoke('get-stock-data', query)
+  getStockData: (query) => ipcRenderer.invoke('get-stock-data', query),
+  getWeatherData: (query) => ipcRenderer.invoke('get-weather-data', query),
+  requestLocationAccess: () => ipcRenderer.invoke('request-location-access'),
+  showLocationSettings: () => ipcRenderer.invoke('show-location-settings'),
+  copyText: (value) => ipcRenderer.invoke('copy-text', value)
 });
 
 console.log("Preload script loaded and electronAPI exposed to renderer.");

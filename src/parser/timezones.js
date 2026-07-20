@@ -13,10 +13,12 @@ const TIMEZONE_MAP = {
     'london': 'Europe/London',
     'paris': 'Europe/Paris',
     'berlin': 'Europe/Berlin',
+    'hamburg': 'Europe/Berlin',
     'madrid': 'Europe/Madrid',
     'tokyo': 'Asia/Tokyo',
     'sydney': 'Australia/Sydney',
     'new york': 'America/New_York',
+    'ny': 'America/New_York',
     'los angeles': 'America/Los_Angeles',
     'chicago': 'America/Chicago',
     'denver': 'America/Denver',
@@ -98,46 +100,49 @@ export function parseCurrentTimeAndDate(line) {
 }
 
 export function parseTimeZoneConversion(line) {
-    const lowerLine = line.toLowerCase().trim();
-    const regex = /^(\d{1,2}(:\d{2})?\s*(?:am|pm)?)\s+([a-z\/_]+)\s+in\s+([a-z\/_]+)$/i;
-    const match = lowerLine.match(regex);
+    const match = line.trim().match(/^(\d{1,2}:\d{2})(?:\s*(am|pm))?\s+(.+?)\s+(?:to|in)\s+(.+)$/i);
 
     if (!match) return null;
 
-    const [, timeStr, , sourceTzAbbr, targetTzAbbr] = match;
-
-    const sourceTimeZone = TIMEZONE_MAP[sourceTzAbbr.toLowerCase()];
-    const targetTimeZone = TIMEZONE_MAP[targetTzAbbr.toLowerCase()];
-
-    if (!sourceTimeZone || !targetTimeZone) {
-        return null;
-    }
+    const [, timeText, meridiem, sourceName, targetName] = match;
+    const sourceTimeZone = TIMEZONE_MAP[sourceName.toLowerCase().trim()];
+    const targetTimeZone = TIMEZONE_MAP[targetName.toLowerCase().trim()];
+    if (!sourceTimeZone || !targetTimeZone) return null;
 
     try {
-        const nowInSourceTz = new Date().toLocaleString('en-US', { timeZone: sourceTimeZone, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        const [datePart, timePart] = nowInSourceTz.split(', ');
-        const [month, day, year] = datePart.split('/').map(Number);
+        const dateParts = new Intl.DateTimeFormat('en-US', {
+            timeZone: sourceTimeZone,
+            year: 'numeric', month: 'numeric', day: 'numeric'
+        }).formatToParts(new Date());
+        const datePart = type => Number(dateParts.find(value => value.type === type).value);
+        let [hour, minute] = timeText.split(':').map(Number);
+        if (meridiem) {
+            if (hour === 12) hour = 0;
+            if (meridiem.toLowerCase() === 'pm') hour += 12;
+        }
+        if (hour > 23 || minute > 59) return null;
 
-        const combinedDateTimeStr = `${month}/${day}/${year} ${timeStr}`;
-        const parsedDate = new Date(combinedDateTimeStr);
-
-        if (isNaN(parsedDate.getTime())) {
-            console.warn(`Could not parse time string for conversion: ${timeStr}`);
-            return null;
+        const wallClockUtc = Date.UTC(datePart('year'), datePart('month') - 1, datePart('day'), hour, minute);
+        let instant = new Date(wallClockUtc);
+        for (let iteration = 0; iteration < 2; iteration += 1) {
+            const sourceParts = new Intl.DateTimeFormat('en-US', {
+                timeZone: sourceTimeZone,
+                year: 'numeric', month: 'numeric', day: 'numeric',
+                hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23'
+            }).formatToParts(instant);
+            const sourcePart = type => Number(sourceParts.find(value => value.type === type).value);
+            const representedUtc = Date.UTC(sourcePart('year'), sourcePart('month') - 1, sourcePart('day'), sourcePart('hour'), sourcePart('minute'), sourcePart('second'));
+            instant = new Date(instant.getTime() + wallClockUtc - representedUtc);
         }
 
-        const formatter = new Intl.DateTimeFormat('en-US', {
+        return new Intl.DateTimeFormat('en-US', {
             hour: '2-digit',
             minute: '2-digit',
             hour12: true,
             timeZone: targetTimeZone
-        });
-
-        return formatter.format(parsedDate);
-
+        }).format(instant).replace(/^0/, '').replace(/\s?(AM|PM)$/, value => ` ${value.trim().toLowerCase()}`);
     } catch (error) {
-        console.error("Error during timezone conversion:", error);
+        console.error('Error during timezone conversion:', error);
         return null;
     }
 }
-

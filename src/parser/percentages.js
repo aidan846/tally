@@ -1,3 +1,5 @@
+import { preprocessNaturalLanguage } from './preprocess.js';
+
 export function parsePercentageOperations(line, parser, decimalPlaces) {
     const lowerLine = line.toLowerCase().trim();
     let resultValue = null;
@@ -10,6 +12,18 @@ export function parsePercentageOperations(line, parser, decimalPlaces) {
             return null;
         }
     };
+
+    const whatPercentMatch = lowerLine.match(/^(.*?)\s+is\s+what\s*%\s+of\s+(.*)$/);
+    if (whatPercentMatch) {
+        const part = safeEvaluate(whatPercentMatch[1]);
+        const whole = safeEvaluate(whatPercentMatch[2]);
+        if (part !== null && whole !== null) {
+            try {
+                const percentage = math.multiply(math.divide(part, whole), 100);
+                if (typeof percentage === 'number') return `${math.format(percentage, { notation: 'fixed', precision: decimalPlaces })}%`;
+            } catch {}
+        }
+    }
 
     let match = lowerLine.match(/^(\d+\.?\d*)\s*%\s+of\s+(.*)$/);
     if (match) {
@@ -134,4 +148,3 @@ export function parsePercentageOperations(line, parser, decimalPlaces) {
 
     return null;
 }
-

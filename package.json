@@ -15,7 +15,10 @@
       "target": "dmg",
       "identity": null,
       "hardenedRuntime": false,
-      "icon": "src/assets/icon.icns"
+      "icon": "src/assets/icon.icns",
+      "extendInfo": {
+        "NSLocationWhenInUseUsageDescription": "Tally uses your location when you request local weather."
+      }
     },
     "win": {
       "target": "nsis",
@@ -38,7 +41,7 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",
-    "test": "node --experimental-default-type=module test/parser.test.mjs && node --experimental-default-type=module test/stocks.test.mjs"
+    "test": "node --experimental-default-type=module test/parser.test.mjs && node --experimental-default-type=module test/stocks.test.mjs && node --experimental-default-type=module test/weather.test.mjs && node --experimental-default-type=module test/answer-format.test.mjs"
   },
   "keywords": [],
   "author": {

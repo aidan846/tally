@@ -193,6 +193,7 @@ body {
   overflow-wrap: anywhere;
   word-break: break-word;
   cursor: copy;
+  user-select: none;
 }
 
 .answer-number { color: #fbbf24; }

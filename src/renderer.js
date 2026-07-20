@@ -1,6 +1,8 @@
 import { initializeSettings, decimalPlaces } from './settings.js';
 import { evaluateInput } from './parser.js';
 import { parseStockExpression } from './stocks/query.js';
+import { parseWeatherQuery } from './weather/query.js';
+import { escapeHtml, formatAnswer } from './answer-format.js';
 
 const calculator = document.getElementById('calculator');
 const PLACEHOLDERS = [
@@ -13,11 +15,11 @@ const PLACEHOLDERS = [
     'Try: price = 24.99',
     'Try: 10 million to billion',
     'Try: ppi = 326',
-    'Try: MSFT 10 days ago'
+    'Try: MSFT 10 days ago',
+    'Try: Weather in Sydney'
 ];
 let previousPlaceholderIndex = -1;
-let stockRequestVersion = 0;
-let stockRequestTimer;
+const asyncRowStates = new WeakMap();
 
 async function loadLocalUnits() {
     try {
@@ -100,10 +102,6 @@ function resizeInput(input) {
     input.style.height = `${input.scrollHeight}px`;
 }
 
-function escapeHtml(value) {
-    return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
-}
-
 function highlightExpression(value) {
     const tokenPattern = /(?:\d+(?:\.\d+)?|\.\d+)|(?<![a-z])(?:km\/h|m\/s|nmi|mm|cm|dm|km|ft|yd|mi|mg|kg|lb|lbs|oz|psi|atm|kpa|hpa|mpa|mph|kph|mps|ml|gal|liters?|grams?|meters?|feet|miles?|pounds?|celsius|fahrenheit|kelvin|[cfkgm])\b|°[cfk]\b|\b(?:and|or|not|minus|plus|add|times|to|in|into|as|from|before|after|with|without|subtract|divide|multiplied|by|xor|mod)\b|[+\-*/%=]/gi;
     let html = '';
@@ -136,20 +134,6 @@ function setPlaceholder(input) {
     input.parentElement.querySelector('.input-placeholder').textContent = PLACEHOLDERS[index];
 }
 
-function formatAnswer(answer) {
-    const text = String(answer ?? '');
-    if (text === '❌') {
-        return '<span class="answer-error-icon" title="Could not evaluate this calculation" aria-label="Could not evaluate this calculation"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M9 9l6 6m0-6l-6 6"/></svg></span>';
-    }
-    const match = text.match(/^([+-]?(?:\d[\d,]*(?:\.\d+)?(?:e[+-]?\d+)?|\.\d+)%?)(\s+)(.+)$/i);
-    if (match) {
-        return `<span class="answer-number">${escapeHtml(match[1])}</span>${escapeHtml(match[2])}<span class="answer-unit">${escapeHtml(match[3])}</span>`;
-    }
-    return /^[+-]?(?:\d|\.\d)/.test(text)
-        ? `<span class="answer-number">${escapeHtml(text)}</span>`
-        : escapeHtml(text);
-}
-
 function showCopyToast(message = 'Copied to clipboard') {
     let toast = document.getElementById('copy-toast');
     if (!toast) {
@@ -167,22 +151,16 @@ function showCopyToast(message = 'Copied to clipboard') {
 }
 
 async function copyToClipboard(value) {
-    if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
+    if (window.electronAPI?.copyText) {
+        await window.electronAPI.copyText(value);
         return;
     }
-    const fallback = document.createElement('textarea');
-    fallback.value = value;
-    fallback.style.position = 'fixed';
-    fallback.style.opacity = '0';
-    document.body.append(fallback);
-    fallback.select();
-    document.execCommand('copy');
-    fallback.remove();
+    await navigator.clipboard.writeText(value);
 }
 
 function attachCopyHandler(output) {
-    output.addEventListener('dblclick', async event => {
+    output.addEventListener('click', async event => {
+        if (event.detail !== 2) return;
         const value = output.textContent.trim();
         if (!value) return;
 
@@ -205,36 +183,117 @@ function formatStockValue(result) {
     return `${result.value.toFixed(decimalPlaces)} ${result.currency}`;
 }
 
+function formatWeatherValue(result) {
+    return `${result.temperature}° ${result.unit} (${result.condition})`;
+}
+
+function getCurrentCoordinates() {
+    return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+            position => resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude
+            }),
+            reject,
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+        );
+    });
+}
+
+function getCurrentRegion() {
+    try {
+        return new Intl.Locale(navigator.language).region || '';
+    } catch {
+        return '';
+    }
+}
+
+async function loadWeather(query) {
+    if (query.location) return window.electronAPI.getWeatherData(query);
+    const allowed = await window.electronAPI.requestLocationAccess();
+    if (!allowed) {
+        const error = new Error('Location access was not allowed');
+        error.locationPermission = true;
+        throw error;
+    }
+
+    let coordinates;
+    try {
+        coordinates = await getCurrentCoordinates();
+    } catch (cause) {
+        await window.electronAPI.showLocationSettings();
+        const error = new Error('Location Services could not provide a location', { cause });
+        error.locationPermission = true;
+        throw error;
+    }
+
+    return window.electronAPI.getWeatherData({
+        source: query.source,
+        coordinates,
+        region: getCurrentRegion()
+    });
+}
+
+function asyncQueryKey(kind, query) {
+    return `${kind}:${JSON.stringify(query)}`;
+}
+
+function formatAsyncValue(kind, result) {
+    return kind === 'weather' ? formatWeatherValue(result) : formatStockValue(result);
+}
+
+function startAsyncQuery(input, output, query, kind) {
+    const key = asyncQueryKey(kind, query);
+    const previous = asyncRowStates.get(input);
+    if (previous?.key === key) {
+        if (previous.result) setOutput(output, formatAsyncValue(kind, previous.result));
+        else if (previous.message) setOutput(output, previous.message);
+        return;
+    }
+
+    if (previous?.timer) window.clearTimeout(previous.timer);
+    const state = { key, result: null, message: null, timer: null };
+    asyncRowStates.set(input, state);
+    setOutput(output, '…');
+
+    state.timer = window.setTimeout(async () => {
+        state.timer = null;
+        try {
+            const result = kind === 'weather'
+                ? await loadWeather(query)
+                : await window.electronAPI.getStockData(query);
+            if (asyncRowStates.get(input) !== state || input.value !== query.source) return;
+            state.result = result;
+            setOutput(output, formatAsyncValue(kind, result));
+        } catch (error) {
+            if (asyncRowStates.get(input) !== state || input.value !== query.source) return;
+            console.error(`Could not load ${kind} data:`, error);
+            state.message = error.locationPermission ? 'Location access needed' : '❌';
+            setOutput(output, state.message);
+        }
+    }, 250);
+}
+
 function updateOutputs() {
     const inputs = [...calculator.querySelectorAll('.calculation-input')];
-    const stockQueries = inputs.map(input => parseStockExpression(input.value));
-    const results = evaluateInput(inputs.map((input, index) => stockQueries[index] ? '' : input.value).join('\n'), decimalPlaces);
-    const requestVersion = ++stockRequestVersion;
-
-    window.clearTimeout(stockRequestTimer);
+    const weatherQueries = inputs.map(input => parseWeatherQuery(input.value));
+    const stockQueries = inputs.map((input, index) => weatherQueries[index] ? null : parseStockExpression(input.value));
+    const asyncQueries = inputs.map((_, index) => weatherQueries[index] || stockQueries[index]);
+    const results = evaluateInput(inputs.map((input, index) => asyncQueries[index] ? '' : input.value).join('\n'), decimalPlaces);
     inputs.forEach((input, index) => {
         const output = input.closest('.calculation-row').querySelector('.calculation-output');
-        setOutput(output, stockQueries[index] ? '…' : results[index]);
+        const query = asyncQueries[index];
+        if (query) {
+            startAsyncQuery(input, output, query, weatherQueries[index] ? 'weather' : 'stock');
+        } else {
+            const state = asyncRowStates.get(input);
+            if (state?.timer) window.clearTimeout(state.timer);
+            asyncRowStates.delete(input);
+            setOutput(output, results[index]);
+        }
         resizeInput(input);
         renderHighlight(input);
     });
-
-    if (!stockQueries.some(Boolean)) return;
-
-    stockRequestTimer = window.setTimeout(() => {
-        stockQueries.forEach(async (query, index) => {
-            if (!query) return;
-            try {
-                const result = await window.electronAPI.getStockData(query);
-                if (requestVersion !== stockRequestVersion || inputs[index].value !== query.source) return;
-                setOutput(inputs[index].closest('.calculation-row').querySelector('.calculation-output'), formatStockValue(result));
-            } catch (error) {
-                if (requestVersion !== stockRequestVersion || inputs[index].value !== query.source) return;
-                console.error('Could not load stock data:', error);
-                setOutput(inputs[index].closest('.calculation-row').querySelector('.calculation-output'), '❌');
-            }
-        });
-    }, 250);
 }
 
 function createRow(value = '') {

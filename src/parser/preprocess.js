@@ -3,9 +3,15 @@ export function preprocessNaturalLanguage(line) {
 
     expr = expr.replace(/^(what is|what's|calculate|compute|tell me|what is the)\s*/, '');
 
-    expr = expr.replace(/([$€£¥])\s*(\d+\.?\d*)/g, (match, symbol, number) => {
-        const symbolMap = { '$': 'USD', '€': 'EUR', '£': 'GBP', '¥': 'JPY' };
-        return `${number} ${symbolMap[symbol] || ''}`.trim();
+    expr = expr.replace(/^((?:nz\$|hk\$|a\$|c\$|s\$|r\$|[$€£¥₹₩₽₺₫฿₱₦])\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+))\s+([a-z]{3})$/i, '$1 to $2');
+
+    expr = expr.replace(/(nz\$|hk\$|a\$|c\$|s\$|r\$|[$€£¥₹₩₽₺₫฿₱₦])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))/gi, (match, symbol, number) => {
+        const symbolMap = {
+            '$': 'USD', '€': 'EUR', '£': 'GBP', '¥': 'JPY', '₹': 'INR', '₩': 'KRW',
+            '₽': 'RUB', '₺': 'TRY', '₫': 'VND', '฿': 'THB', '₱': 'PHP', '₦': 'NGN',
+            'a$': 'AUD', 'c$': 'CAD', 'nz$': 'NZD', 'hk$': 'HKD', 's$': 'SGD', 'r$': 'BRL'
+        };
+        return `${number} ${symbolMap[symbol.toLowerCase()] || symbolMap[symbol] || ''}`.trim();
     });
 
 
@@ -46,4 +52,3 @@ export function preprocessNaturalLanguage(line) {
 
     return expr;
 }
-

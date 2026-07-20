@@ -7,6 +7,17 @@ const { resolveStockData } = require('../src/stocks/provider.cjs');
 const now = new Date(2026, 6, 20, 12);
 
 assert.deepEqual(parseStockReference('MSFT', now), { symbol: 'MSFT', field: 'price', date: null });
+assert.deepEqual(parseStockReference('msft', now), { symbol: 'MSFT', field: 'price', date: null });
+assert.deepEqual(parseStockReference('MsFt Stock', now), { symbol: 'MSFT', field: 'price', date: null });
+assert.deepEqual(parseStockReference('nq', now), { symbol: 'NQ', field: 'price', date: null });
+assert.deepEqual(parseStockReference('Es Stock', now), { symbol: 'ES', field: 'price', date: null });
+assert.deepEqual(parseStockReference('ym', now), { symbol: 'YM', field: 'price', date: null });
+assert.deepEqual(parseStockReference('spx', now), { symbol: 'SPX', field: 'price', date: null });
+assert.deepEqual(parseStockReference('Dow', now), { symbol: 'DOW', field: 'price', date: null });
+assert.deepEqual(parseStockReference('nasdaq', now), { symbol: 'NASDAQ', field: 'price', date: null });
+assert.deepEqual(parseStockReference('^DJI', now), { symbol: '^DJI', field: 'price', date: null });
+assert.deepEqual(parseStockReference('^gspc', now), { symbol: '^GSPC', field: 'price', date: null });
+assert.deepEqual(parseStockReference('^ixic', now), { symbol: '^IXIC', field: 'price', date: null });
 assert.deepEqual(parseStockReference('AAPL High Today', now), { symbol: 'AAPL', field: 'high', date: null });
 assert.deepEqual(parseStockReference('AAPL Low Today', now), { symbol: 'AAPL', field: 'low', date: null });
 assert.deepEqual(parseStockReference('AAPL open price', now), { symbol: 'AAPL', field: 'open', date: null });
@@ -37,6 +48,24 @@ const fetchMock = async () => ({
         }
     })
 });
+
+const expectedAliases = new Map([
+    ['NQ', 'NQ%3DF'],
+    ['ES', 'ES%3DF'],
+    ['YM', 'YM%3DF'],
+    ['SPX', '%5EGSPC'],
+    ['DOW', '%5EDJI'],
+    ['NASDAQ', '%5EIXIC']
+]);
+
+for (const [input, encodedSymbol] of expectedAliases) {
+    let requestedUrl;
+    await resolveStockData(parseStockExpression(input, now), async url => {
+        requestedUrl = String(url);
+        return fetchMock();
+    });
+    assert.match(requestedUrl, new RegExp(`/${encodedSymbol}\\?`));
+}
 
 assert.deepEqual(
     await resolveStockData(parseStockExpression('MSFT', now), fetchMock),

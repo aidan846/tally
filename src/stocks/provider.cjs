@@ -1,8 +1,19 @@
 const BASE_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
+const SYMBOL_ALIASES = {
+  NQ: 'NQ=F',
+  ES: 'ES=F',
+  YM: 'YM=F',
+  SPX: '^GSPC',
+  '^SPX': '^GSPC',
+  DOW: '^DJI',
+  '^DOW': '^DJI',
+  NASDAQ: '^IXIC',
+  '^NASDAQ': '^IXIC'
+};
 const cache = new Map();
 
 function validateReference(reference) {
-  if (!reference || !/^[A-Z][A-Z0-9.-]{0,9}$/.test(reference.symbol)) throw new Error('Invalid stock symbol');
+  if (!reference || !/^\^?[A-Z][A-Z0-9.-]{0,9}$/.test(reference.symbol)) throw new Error('Invalid stock symbol');
   if (!['price', 'open', 'high', 'low', 'close'].includes(reference.field)) throw new Error('Invalid stock field');
   if (reference.date !== null && !/^\d{4}-\d{2}-\d{2}$/.test(reference.date)) throw new Error('Invalid stock date');
 }
@@ -20,6 +31,7 @@ function dateRange(dateKey) {
 }
 
 async function loadChart(reference, fetchImpl) {
+  const symbol = SYMBOL_ALIASES[reference.symbol] || reference.symbol;
   const params = new URLSearchParams({ interval: '1d', events: 'history' });
   if (reference.date) {
     const range = dateRange(reference.date);
@@ -29,7 +41,7 @@ async function loadChart(reference, fetchImpl) {
     params.set('range', '5d');
   }
 
-  const response = await fetchImpl(`${BASE_URL}/${encodeURIComponent(reference.symbol)}?${params}`, {
+  const response = await fetchImpl(`${BASE_URL}/${encodeURIComponent(symbol)}?${params}`, {
     headers: { 'User-Agent': 'Tally/1.0' },
     signal: AbortSignal.timeout(10000)
   });
