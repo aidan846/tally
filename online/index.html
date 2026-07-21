@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tally</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+  <link rel="stylesheet" href="index.css" />
+  <script>
+    document.documentElement.dataset.platform = window.electronAPI?.platform || 'web';
+  </script>
+  <link rel="manifest" href="manifest.webmanifest">
+</head>
+
+<body>
+  <div id="titlebar">
+    <div id="titlebar-left">
+      <div class="traffic-light red"></div>
+      <div class="traffic-light yellow"></div>
+      <div class="traffic-light green"></div>
+    </div>
+    <div id="titlebar-center">Tally</div>
+    <div id="titlebar-right">
+      <button id="settings-button" aria-label="Settings" title="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h12M20 17h0"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="18" cy="17" r="2"/></svg>
+      </button>
+    </div>
+    <div class="window-controls" aria-label="Window controls">
+      <button id="minimize-button" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1 5h8"/></svg></button>
+      <button id="maximize-button" aria-label="Maximize" title="Maximize"><svg viewBox="0 0 10 10" aria-hidden="true"><rect x="1.5" y="1.5" width="7" height="7"/></svg></button>
+      <button id="close-button" aria-label="Close" title="Close"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="m1.5 1.5 7 7m0-7-7 7"/></svg></button>
+    </div>
+  </div>
+  <div id="settings-panel" hidden>
+    <div class="settings-heading">Appearance</div>
+    <label class="setting-row" for="theme-select"><span>Theme</span><select id="theme-select">
+      <option value="auto">Auto</option><option value="light">Light</option><option value="dark">Dark</option>
+    </select></label>
+    <label class="setting-row" for="decimals-select"><span>Decimals</span><select id="decimals-select">
+      <option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+    </select></label>
+    <div class="settings-shortcut"><kbd>C</kbd><kbd>C</kbd><kbd>C</kbd><span>clear all</span></div>
+    <div class="settings-shortcut"><kbd>X</kbd><kbd>X</kbd><span>delete row</span></div>
+    <div class="settings-shortcut"><kbd>Ctrl</kbd><kbd>C</kbd><span>copy line</span></div>
+  </div>
+
+  <div class="container">
+    <div class="calculator" id="calculator">
+      <div class="calculation-row">
+        <div class="input-stack">
+          <pre class="calculation-highlight" aria-hidden="true"></pre>
+          <pre class="input-placeholder" aria-hidden="true"></pre>
+          <textarea class="calculation-input" rows="1" aria-label="Calculation"></textarea>
+        </div>
+        <output class="calculation-output"></output>
+      </div>
+    </div>
+  </div>
+
+  <script src="mathjs/math.js"></script>
+  <script src="pwa-api.js"></script>
+  <script type="module" src="renderer.js"></script>
+  <script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");</script>
+</body>
+
+</html>
