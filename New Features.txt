@@ -1,0 +1,3 @@
+- disable pressing enter if you haven't typed anything
+- make it so if nothing is typed and you click enter, the suggestion placeholder fills in?
+- ensure in pwa and also actual executables the background color in settings, highlight, and dropdowns are correct
