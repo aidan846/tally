@@ -1,6 +1,20 @@
 export let decimalPlaces = 2;
 const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
+export function initializeWindowControls() {
+    const minimizeButton = document.getElementById('minimize-button');
+    const maximizeButton = document.getElementById('maximize-button');
+    const closeButton = document.getElementById('close-button');
+
+    minimizeButton?.addEventListener('click', () => window.electronAPI.minimizeWindow());
+    maximizeButton?.addEventListener('click', async () => {
+        const isMaximized = await window.electronAPI.toggleMaximizeWindow();
+        maximizeButton.title = isMaximized ? 'Restore' : 'Maximize';
+        maximizeButton.setAttribute('aria-label', maximizeButton.title);
+    });
+    closeButton?.addEventListener('click', () => window.electronAPI.closeWindow());
+}
+
 function applyTheme(theme) {
     if (theme === 'auto') {
         const systemPrefersDark = systemThemeQuery.matches;
@@ -46,18 +60,6 @@ export async function initializeSettings() {
     const settingsPanel = document.getElementById('settings-panel');
     const closeSettings = () => { settingsPanel.hidden = true; };
     closeSettings();
-
-    const minimizeButton = document.getElementById('minimize-button');
-    const maximizeButton = document.getElementById('maximize-button');
-    const closeButton = document.getElementById('close-button');
-    minimizeButton?.addEventListener('click', () => window.electronAPI.minimizeWindow());
-    maximizeButton?.addEventListener('click', async () => {
-        const isMaximized = await window.electronAPI.toggleMaximizeWindow();
-        maximizeButton.textContent = isMaximized ? '❐' : '□';
-        maximizeButton.title = isMaximized ? 'Restore' : 'Maximize';
-        maximizeButton.setAttribute('aria-label', maximizeButton.title);
-    });
-    closeButton?.addEventListener('click', () => window.electronAPI.closeWindow());
 
     settingsButton.addEventListener('click', event => {
         event.stopPropagation();

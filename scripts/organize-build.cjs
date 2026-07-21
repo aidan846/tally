@@ -1,7 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-const INSTALLER_EXTENSIONS = new Set(['.dmg', '.exe', '.appimage']);
+const INSTALLER_EXTENSIONS = new Set(['.dmg', '.exe', '.appimage', '.appx', '.msix']);
 
 async function moveItem(source, destinationDirectory) {
   await fs.mkdir(destinationDirectory, { recursive: true });

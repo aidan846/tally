@@ -1,4 +1,4 @@
-import { initializeSettings, decimalPlaces } from './settings.js';
+import { initializeSettings, initializeWindowControls, decimalPlaces } from './settings.js';
 import { evaluateInput } from './parser.js';
 import { parseStockExpression } from './stocks/query.js';
 import { parseWeatherQuery } from './weather/query.js';
@@ -469,10 +469,12 @@ document.addEventListener('tally:settings-changed', updateOutputs);
 document.addEventListener('tally:begin-input', event => insertIntoNewestInput(event.detail));
 
 async function main() {
+    initializeWindowControls();
+    initializeSettings();
+
     await loadLocalUnits();
     await loadCurrencyUnits();
 
-    initializeSettings();
     initializeCalculator();
 }
 

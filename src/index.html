@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
   <link rel="stylesheet" href="index.css" />
   <script>
-    document.documentElement.dataset.platform = window.electronAPI.platform;
+    document.documentElement.dataset.platform = window.electronAPI?.platform || 'web';
   </script>
 </head>
 
@@ -26,9 +26,9 @@
       </button>
     </div>
     <div class="window-controls" aria-label="Window controls">
-      <button id="minimize-button" aria-label="Minimize" title="Minimize">−</button>
-      <button id="maximize-button" aria-label="Maximize" title="Maximize">□</button>
-      <button id="close-button" aria-label="Close" title="Close">×</button>
+      <button id="minimize-button" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1 5h8"/></svg></button>
+      <button id="maximize-button" aria-label="Maximize" title="Maximize"><svg viewBox="0 0 10 10" aria-hidden="true"><rect x="1.5" y="1.5" width="7" height="7"/></svg></button>
+      <button id="close-button" aria-label="Close" title="Close"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="m1.5 1.5 7 7m0-7-7 7"/></svg></button>
     </div>
   </div>
   <div id="settings-panel" hidden>
