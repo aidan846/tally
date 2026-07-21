@@ -27,10 +27,20 @@ jobs:
         run: npm ci
       - name: Build PWA
         run: npm run build:pwa
-      - name: Publish PWA to gh-pages
+      - name: Check out existing Pages site
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: site
+      - name: Place PWA under /online/
+        run: |
+          rm -rf site/online
+          mkdir -p site/online
+          cp -R build/pwa/. site/online/
+      - name: Publish site and PWA to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: ./build/pwa
-          commit_message: "Deploy PWA from main"
+          publish_dir: ./site
+          commit_message: "Deploy PWA under /online/"

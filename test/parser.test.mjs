@@ -88,6 +88,8 @@ const requestedCases = [
     ['$2 * 20gbp', '$50.00'],
     ['300 usd in aud', '450.00 AUD'],
     ['75 is what % of 600', '12.5000%'],
+    ['price = 100\ntax = 8.875%\ntax of price', '8.8750'],
+    ['price = 100\ntax = 8.875%\ntax times price', '8.8750'],
     ['hours = 10', '10.0000'],
     ['hourly rate = $20', '$20.00'],
     ['hours = 10\nhourly rate = $20\nhours * hourly rate', '$200.00'],
@@ -114,6 +116,8 @@ assert.equal(evaluateInput('14:20 New York to Beijing', 2)[0], '2:20 am');
 
 assert.deepEqual(evaluateInput('Price: 40\nPrice', 2), ['40.00', '40.00']);
 assert.deepEqual(evaluateInput('Price = 40\nPrice', 2), ['40.00', '40.00']);
+assert.equal(evaluateInput('pi', 4)[0], '3.1416');
+assert.equal(evaluateInput('pi * 2', 4)[0], '6.2832');
 
 const randomResult = Number(evaluateInput('random number between 10 and 20', 2)[0]);
 assert.ok(Number.isInteger(randomResult) && randomResult >= 10 && randomResult <= 20);

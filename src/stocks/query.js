@@ -47,6 +47,10 @@ export function parseStockExpression(value, now = new Date(), knownVariables = n
     const expression = value.trim();
     if (!expression) return null;
 
+    // `pi` is a built-in math constant. Require the explicit `pi stock` form
+    // before treating the ticker as a stock query.
+    if (/^pi$/i.test(expression)) return null;
+
     if (knownVariables.has(expression.toLowerCase())) return null;
 
     const difference = expression.match(/^(.*?)\s+-\s+(.*?)$/);

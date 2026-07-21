@@ -1,11 +1,12 @@
 {
   "name": "tally",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A simple calculator for your daily tasks.",
   "main": "src/index.js",
   "build": {
     "appId": "com.aidan.tally",
     "productName": "Tally",
+    "forceCodeSigning": false,
     "directories": {
       "buildResources": "src/assets",
       "output": "build"
@@ -22,12 +23,11 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "src/assets/icon.png",
-      "signAndEditExecutable": false
+      "icon": "src/assets/icon.ico"
     },
     "appx": {
       "applicationId": "Tally",
-      "identityName": "aidan.TallySmartCalculator",
+      "identityName": "aidan846.TallySmartCalculator",
       "publisher": "CN=40932DBE-68FA-4D37-A0D1-3C0A3F21D656",
       "publisherDisplayName": "aidan846",
       "displayName": "Tally | Smart Calculator",
@@ -35,7 +35,8 @@
       "showNameOnTiles": true
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "icon": "src/assets/icon.png"
     },
     "files": [
       "src/**/*",
@@ -46,14 +47,12 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "build:mac": "electron-builder --mac --config.directories.output=build/mac && node scripts/organize-build.cjs build/mac",
-    "build:win": "electron-builder --win --x64 --config.directories.output=build/win && node scripts/organize-build.cjs build/win",
-    "build:win:x86": "electron-builder --win --ia32 --config.directories.output=build/win-x86 && node scripts/organize-build.cjs build/win-x86",
-    "build:msix": "npm run build:msix:x64",
-    "build:msix:x64": "set \"MSIX_ARCH=x64\" && electron-builder --win dir --x64 --config.directories.output=build/msix-unpacked-x64 --config.win.signAndEditExecutable=false && node scripts/package-msix.cjs",
-    "build:msix:x86": "set \"MSIX_ARCH=x86\" && electron-builder --win dir --ia32 --config.directories.output=build/msix-unpacked-x86 --config.win.signAndEditExecutable=false && node scripts/package-msix.cjs",
+    "build:win:x64": "set \"CSC_IDENTITY_AUTO_DISCOVERY=false\" && electron-builder --win --x64 --config.directories.output=build/win-x64 --config.win.artifactName=\"Tally Setup ${version}-x64.${ext}\" && node scripts/organize-build.cjs build/win-x64",
+    "build:win:x86": "set \"CSC_IDENTITY_AUTO_DISCOVERY=false\" && electron-builder --win --ia32 --config.directories.output=build/win-x86 --config.win.artifactName=\"Tally Setup ${version}-x86.${ext}\" && node scripts/organize-build.cjs build/win-x86",
+    "build:msix:x64": "set \"CSC_IDENTITY_AUTO_DISCOVERY=false\" && set \"MSIX_ARCH=x64\" && electron-builder --win dir --x64 --config.directories.output=build/msix-unpacked-x64 && node scripts/package-msix.cjs",
+    "build:msix:x86": "set \"CSC_IDENTITY_AUTO_DISCOVERY=false\" && set \"MSIX_ARCH=x86\" && electron-builder --win dir --ia32 --config.directories.output=build/msix-unpacked-x86 && node scripts/package-msix.cjs",
     "build:linux": "electron-builder --linux --x64 --config.directories.output=build/linux && node scripts/organize-build.cjs build/linux",
-    "build:win:all": "npm run build:win && npm run build:win:x86 && npm run build:msix:x64 && npm run build:msix:x86 && npm run build:pwa",
-    "build:mac:all": "npm run build:mac && npm run build:win:all",
+    "build:win": "npm run build:win:x64 && npm run build:win:x86 && npm run build:msix:x64 && npm run build:msix:x86",
     "build:pwa": "node scripts/build-pwa.cjs",
     "make": "electron-forge make",
     "publish": "electron-forge publish",

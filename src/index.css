@@ -49,7 +49,7 @@
   height: 24px;
   display: grid;
   place-items: center;
-  background: rgba(255,255,255,0.08);
+  background: transparent;
   border: none;
   color: inherit;
   cursor: pointer;
@@ -57,10 +57,12 @@
   padding: 0;
   border-radius: 8px;
   transform: translateY(1px);
+  transition: background-color 120ms ease;
   -webkit-app-region: no-drag;
 }
 
 #settings-button:hover { background: rgba(255,255,255,0.16); }
+#settings-button:active { background: rgba(255,255,255,0.22); }
 #settings-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.7; }
 
 .window-controls {
@@ -69,24 +71,31 @@
 }
 
 html[data-platform="win32"] #titlebar-left { display: none; }
+html[data-platform="win32"] #titlebar { padding-right: 0; }
 html[data-platform="win32"] #titlebar-right {
   margin-left: 0;
   order: -1;
 }
 html[data-platform="win32"] .window-controls {
   display: flex;
-  align-items: stretch;
-  height: 32px;
+  align-items: center;
+  height: 100%;
+  gap: 1px;
   margin-left: auto;
+  padding-right: 4px;
 }
 html[data-platform="win32"] .window-controls button {
   -webkit-app-region: no-drag;
-  width: 46px;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
   border: 0;
   padding: 0;
   color: inherit;
   background: transparent;
+  border-radius: 50%;
   cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 html[data-platform="win32"] .window-controls button svg {
   width: 10px;
@@ -97,12 +106,14 @@ html[data-platform="win32"] .window-controls button svg {
   stroke-width: 1;
 }
 html[data-platform="win32"] .window-controls button:hover { background: rgba(255,255,255,0.12); }
+html[data-platform="win32"] .window-controls button:active { background: rgba(255,255,255,0.2); }
 html[data-platform="win32"] .window-controls #close-button:hover { background: #c42b1c; color: #fff; }
+html[data-platform="win32"] .window-controls #close-button:active { background: #a92317; color: #fff; }
 
 #settings-panel {
   position: absolute;
   top: 2.5rem;
-  right: 1rem;
+  right: 8px;
   width: 190px;
   background: rgba(39, 42, 52, 0.96);
   color: #fff;
@@ -114,7 +125,7 @@ html[data-platform="win32"] .window-controls #close-button:hover { background: #
 }
 
 html[data-platform="win32"] #settings-panel {
-  left: 1rem;
+  left: 8px;
   right: auto;
 }
 
@@ -145,8 +156,12 @@ body.light #settings-panel {
   border-color: rgba(0,0,0,0.08);
 }
 
-body.light #settings-button { background: rgba(0,0,0,0.06); }
 body.light #settings-button:hover { background: rgba(0,0,0,0.12); }
+body.light #settings-button:active { background: rgba(0,0,0,0.18); }
+html[data-platform="win32"] body.light .window-controls button:hover { background: rgba(0,0,0,0.1); }
+html[data-platform="win32"] body.light .window-controls button:active { background: rgba(0,0,0,0.16); }
+html[data-platform="win32"] body.light .window-controls #close-button:hover { background: #c42b1c; color: #fff; }
+html[data-platform="win32"] body.light .window-controls #close-button:active { background: #a92317; color: #fff; }
 body.light .settings-heading, body.light .settings-shortcut { color: #687086; }
 body.light .settings-shortcut { border-color: rgba(0,0,0,0.08); }
 body.light kbd { background: #eef0f5; border-color: #dfe2ea; color: #252a38; }

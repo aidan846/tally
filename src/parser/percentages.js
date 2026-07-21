@@ -34,6 +34,20 @@ export function parsePercentageOperations(line, parser, decimalPlaces) {
         }
     }
 
+    // Allow a stored percentage variable to be used like a numeric percentage:
+    // `tax = 8.875%`, followed by `tax of price`.
+    if (resultValue === null) {
+        match = lowerLine.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s+of\s+(.+)$/);
+        if (match) {
+            const percentageValue = safeEvaluate(match[1]);
+            const baseValue = safeEvaluate(match[2]);
+            if (typeof percentageValue === 'number'
+                && (typeof baseValue === 'number' || baseValue instanceof math.Unit)) {
+                resultValue = math.multiply(baseValue, percentageValue);
+            }
+        }
+    }
+
     if (resultValue === null) {
         match = lowerLine.match(/^(\d+\.?\d*)\s*%\s+on\s+(.*)$/);
         if (match) {

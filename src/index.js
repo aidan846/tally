@@ -5,6 +5,10 @@ const fs = require('node:fs');
 const { getStockData } = require('./stocks/provider.cjs');
 const { getWeatherData } = require('./weather/provider.cjs');
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.aidan.tally');
+}
+
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
@@ -116,12 +120,18 @@ function readUnitDefinitions() {
 }
 
 const createWindow = () => {
+  const iconFile = process.platform === 'darwin'
+    ? 'icon.icns'
+    : process.platform === 'win32'
+      ? 'icon.ico'
+      : 'icon.png';
   const mainWindow = new BrowserWindow({
     width: 460,
     height: 360,
     frame: false,
-    transparent: true,
-    titleBarStyle: 'hiddenInset',
+    transparent: false,
+    icon: path.join(__dirname, 'assets', iconFile),
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
