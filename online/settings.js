@@ -58,8 +58,17 @@ export async function initializeSettings() {
 
     const settingsButton = document.getElementById('settings-button');
     const settingsPanel = document.getElementById('settings-panel');
+    const versionLink = document.getElementById('version-link');
     const closeSettings = () => { settingsPanel.hidden = true; };
     closeSettings();
+
+    try {
+        const version = await window.electronAPI.getAppVersion();
+        versionLink.textContent = `Version ${version}`;
+    } catch {
+        versionLink.textContent = 'Version unavailable';
+    }
+    versionLink.addEventListener('click', () => window.electronAPI.openReleasesPage());
 
     settingsButton.addEventListener('click', event => {
         event.stopPropagation();

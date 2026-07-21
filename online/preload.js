@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onSetDecimals: (callback) => ipcRenderer.on('set-decimals', (_, value) => callback(value)),
 
   getConfig: () => ipcRenderer.invoke('get-config'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   setConfig: (newConfig) => ipcRenderer.invoke('set-config', newConfig),
 
   getUnitDefinitions: () => ipcRenderer.invoke('get-unit-definitions'),
