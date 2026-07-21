@@ -16,7 +16,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getWeatherData: (query) => ipcRenderer.invoke('get-weather-data', query),
   requestLocationAccess: () => ipcRenderer.invoke('request-location-access'),
   showLocationSettings: () => ipcRenderer.invoke('show-location-settings'),
-  copyText: (value) => ipcRenderer.invoke('copy-text', value)
+  copyText: (value) => ipcRenderer.invoke('copy-text', value),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  openReleasesPage: () => ipcRenderer.invoke('open-releases-page')
 });
 
 console.log("Preload script loaded and electronAPI exposed to renderer.");
