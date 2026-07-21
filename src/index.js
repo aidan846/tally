@@ -5,6 +5,9 @@ const fs = require('node:fs');
 const { getStockData } = require('./stocks/provider.cjs');
 const { getWeatherData } = require('./weather/provider.cjs');
 
+const RELEASES_URL = 'https://github.com/aidan846/tally/releases/latest';
+const RELEASE_API_URL = 'https://api.github.com/repos/aidan846/tally/releases/latest';
+
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.aidan.tally');
 }
@@ -51,6 +54,40 @@ ipcMain.handle('copy-text', (_event, value) => {
   if (typeof value !== 'string') throw new Error('Invalid clipboard value');
   clipboard.writeText(value);
 });
+
+function compareVersions(left, right) {
+  const parse = value => String(value).replace(/^v/i, '').split('-')[0].split('.').map(part => {
+    const number = Number.parseInt(part, 10);
+    return Number.isFinite(number) ? number : 0;
+  });
+  const current = parse(left);
+  const latest = parse(right);
+  for (let index = 0; index < 3; index += 1) {
+    if ((latest[index] || 0) !== (current[index] || 0)) {
+      return (latest[index] || 0) > (current[index] || 0) ? 1 : -1;
+    }
+  }
+  return 0;
+}
+
+ipcMain.handle('check-for-updates', async () => {
+  try {
+    const response = await fetch(RELEASE_API_URL, {
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'Tally-update-check' },
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!response.ok) return null;
+    const release = await response.json();
+    const latestVersion = String(release.tag_name || '').replace(/^v/i, '');
+    if (!latestVersion || compareVersions(app.getVersion(), latestVersion) >= 0) return null;
+    return { currentVersion: app.getVersion(), latestVersion, releasesUrl: RELEASES_URL };
+  } catch (error) {
+    console.warn('Could not check for updates:', error.message);
+    return null;
+  }
+});
+
+ipcMain.handle('open-releases-page', () => shell.openExternal(RELEASES_URL));
 
 ipcMain.handle('request-location-access', async event => {
   if (config.locationAccessAccepted) return true;

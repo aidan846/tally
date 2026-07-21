@@ -21,6 +21,22 @@ const PLACEHOLDERS = [
 let previousPlaceholderIndex = -1;
 const asyncRowStates = new WeakMap();
 
+async function checkForUpdates() {
+    if (!window.electronAPI?.checkForUpdates) return;
+
+    const update = await window.electronAPI.checkForUpdates();
+    if (!update) return;
+
+    const notice = document.getElementById('update-notice');
+    const detail = document.getElementById('update-notice-detail');
+    const openButton = document.getElementById('update-notice-open');
+    const dismissButton = document.getElementById('update-notice-dismiss');
+    detail.textContent = `Tally ${update.latestVersion} is ready (you have ${update.currentVersion}).`;
+    openButton.addEventListener('click', () => window.electronAPI.openReleasesPage(), { once: true });
+    dismissButton.addEventListener('click', () => { notice.hidden = true; }, { once: true });
+    notice.hidden = false;
+}
+
 async function loadLocalUnits() {
     try {
         console.log('Loading local unit definitions...');
@@ -471,6 +487,7 @@ document.addEventListener('tally:begin-input', event => insertIntoNewestInput(ev
 async function main() {
     initializeWindowControls();
     initializeSettings();
+    checkForUpdates().catch(error => console.warn('Update check failed:', error));
 
     await loadLocalUnits();
     await loadCurrencyUnits();
