@@ -1,6 +1,6 @@
 {
   "name": "tally",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A simple calculator for your daily tasks.",
   "main": "src/index.js",
   "build": {
