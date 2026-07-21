@@ -8,6 +8,14 @@
   const configKey = 'tally-config';
   const readConfig = () => JSON.parse(localStorage.getItem(configKey) || '{}');
   const saveConfig = value => localStorage.setItem(configKey, JSON.stringify(value));
+  const getAppVersion = async () => {
+    try {
+      const manifest = await fetch('manifest.webmanifest').then(response => response.json());
+      return manifest.version || 'web';
+    } catch {
+      return 'web';
+    }
+  };
   const request = async url => {
     const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error(`Request failed: ${response.status}`);
@@ -50,6 +58,7 @@
   window.electronAPI = window.electronAPI || {
     platform: 'web',
     getConfig: async () => readConfig(),
+    getAppVersion,
     setConfig: async next => { const value = { ...readConfig(), ...next }; saveConfig(value); return value; },
     getUnitDefinitions: async () => fetch('units.json').then(response => response.json()),
     getStockData: stock,
@@ -59,6 +68,7 @@
     copyText: value => navigator.clipboard.writeText(value),
     minimizeWindow: () => {},
     toggleMaximizeWindow: async () => false,
-    closeWindow: () => {}
+    closeWindow: () => {},
+    openReleasesPage: () => window.open('https://github.com/aidan846/tally/releases/latest', '_blank', 'noopener')
   };
 })();

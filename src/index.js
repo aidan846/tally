@@ -42,6 +42,8 @@ ipcMain.handle('get-config', () => {
   return config;
 });
 
+ipcMain.handle('get-app-version', () => app.getVersion());
+
 ipcMain.handle('set-config', (_event, newConfig) => {
   config = { ...config, ...newConfig };
   saveConfig(config);
