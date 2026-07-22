@@ -1,0 +1,27 @@
+Tally (Tauri) commands
+
+Install dependencies:
+npm install
+
+Run the desktop app in development:
+npm run tauri:dev
+
+Run the frontend-only dev server:
+npm run dev
+
+Run the test suite:
+npm test
+
+Build the frontend/PWA output:
+npm run build
+npm run build:pwa
+
+Preview the built frontend:
+npm run preview
+
+Build the native desktop app:
+npm run tauri:build
+
+Notes:
+- `npm run build` and `npm run build:pwa` both produce the frontend `dist/` output.
+- Tauri desktop bundles must be built on the target operating system.
