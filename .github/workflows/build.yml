@@ -105,6 +105,40 @@ jobs:
           pattern: tally-desktop-*
           path: release-assets
           merge-multiple: true
+      - name: Verify release asset set
+        shell: bash
+        run: |
+          check_count() {
+            local pattern="$1"
+            local expected="$2"
+            local actual
+            actual=$(find release-assets -type f -name "$pattern" | wc -l)
+            if [ "$actual" -ne "$expected" ]; then
+              echo "Expected $expected $pattern file(s), found $actual."
+              find release-assets -type f -print
+              exit 1
+            fi
+          }
+
+          check_count '*.exe' 2
+          check_count '*.dmg' 2
+          check_count '*.deb' 1
+          check_count '*.AppImage' 1
+
+          unexpected=$(find release-assets -type f ! \( \
+            -name '*.exe' -o \
+            -name '*.dmg' -o \
+            -name '*.deb' -o \
+            -name '*.AppImage' \
+          \) -print)
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected files found in the release asset set:"
+            echo "$unexpected"
+            exit 1
+          fi
+
+          echo "Verified release assets:"
+          find release-assets -type f -print | sort
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
