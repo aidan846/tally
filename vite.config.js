@@ -1,7 +1,17 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+function normalizeBasePath(value) {
+  let basePath = value?.trim() || '/';
+  if (!basePath.startsWith('/')) basePath = `/${basePath}`;
+  if (!basePath.endsWith('/')) basePath = `${basePath}/`;
+  return basePath;
+}
+
+const base = normalizeBasePath(process.env.TALLY_WEB_BASE);
+
 export default defineConfig({
+  base,
   root: 'src',
   publicDir: 'public',
   clearScreen: false,
@@ -22,6 +32,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['assets/icon.svg', 'assets/150.png', 'assets/300.png'],
       manifest: {
+        id: './',
         name: 'Tally | Smart Calculator',
         short_name: 'Tally',
         description: 'A simple calculator for your daily tasks.',
@@ -29,6 +40,7 @@ export default defineConfig({
         background_color: '#1e1e1e',
         display: 'standalone',
         start_url: './',
+        scope: './',
         icons: [
           { src: 'assets/150.png', sizes: '150x150', type: 'image/png' },
           { src: 'assets/300.png', sizes: '300x300', type: 'image/png' },
