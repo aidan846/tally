@@ -1,16 +1,1 @@
-{
-  "name": "Tally",
-  "short_name": "Tally",
-  "version": "1.1.3",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#111827",
-  "theme_color": "#111827",
-  "icons": [
-    {
-      "src": "assets/icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
-}
+{"name":"Tally | Smart Calculator","short_name":"Tally","description":"A simple calculator for your daily tasks.","start_url":"./","display":"standalone","background_color":"#1e1e1e","theme_color":"#1e1e1e","lang":"en","scope":"./","id":"./","icons":[{"src":"assets/150.png","sizes":"150x150","type":"image/png"},{"src":"assets/300.png","sizes":"300x300","type":"image/png"},{"src":"assets/1080.png","sizes":"1080x1080","type":"image/png","purpose":"any maskable"}]}
