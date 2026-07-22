@@ -30,29 +30,29 @@ jobs:
             label: windows-x64
             target: x86_64-pc-windows-msvc
             bundles: nsis
-            bundlePath: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/**
+            bundlePath: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
           - os: windows-latest
             label: windows-x86
             target: i686-pc-windows-msvc
             bundles: nsis
-            bundlePath: src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/**
+            bundlePath: src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
           - os: macos-15-intel
             label: macos-intel
             target: x86_64-apple-darwin
             bundles: dmg
-            bundlePath: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/**
+            bundlePath: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
           - os: macos-15
             label: macos-apple-silicon
             target: aarch64-apple-darwin
             bundles: dmg
-            bundlePath: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/**
+            bundlePath: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
           - os: ubuntu-24.04
             label: linux-x64
             target: x86_64-unknown-linux-gnu
             bundles: deb,appimage
             bundlePath: |
-              src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/**
-              src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/**
+              src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+              src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -109,4 +109,8 @@ jobs:
         with:
           generate_release_notes: true
           fail_on_unmatched_files: true
-          files: release-assets/**
+          files: |
+            release-assets/**/*.exe
+            release-assets/**/*.dmg
+            release-assets/**/*.deb
+            release-assets/**/*.AppImage
