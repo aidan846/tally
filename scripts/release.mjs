@@ -47,7 +47,11 @@ const branch = output('git', ['branch', '--show-current']);
 if (!branch) throw new Error('Release requires a checked-out branch.');
 
 run('git', ['diff', '--check']);
-run('npm', ['test']);
+if (process.platform === 'win32') {
+    run('cmd.exe', ['/d', '/s', '/c', 'npm test']);
+} else {
+    run('npm', ['test']);
+}
 
 if (output('git', ['tag', '--list', tag]) || output('git', ['ls-remote', '--tags', 'origin', `refs/tags/${tag}`])) {
     throw new Error(`Tag ${tag} already exists locally or on origin.`);
