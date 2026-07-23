@@ -30,7 +30,7 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['assets/icon.svg', 'assets/150.png', 'assets/300.png'],
+      includeAssets: ['assets/icon.svg', 'assets/150.png', 'assets/300.png', 'assets/1080.png'],
       manifest: {
         id: './',
         name: 'Tally | Smart Calculator',

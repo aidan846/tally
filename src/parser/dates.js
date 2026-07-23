@@ -1,18 +1,38 @@
-export function parseStandaloneDate(line) {
+const DATE_MONTHS = {
+    jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3,
+    may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7,
+    sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10,
+    dec: 11, december: 11
+};
+
+function parseDateLiteral(value, { allowNumeric = true, allowPartialNumeric = false, now = new Date() } = {}) {
+    const normalized = value.trim().replace(/,/g, '');
+    const named = normalized.match(/^([a-z]+)\s+(\d{1,2})(?:\s+(\d{2}|\d{4}))?$/i)
+        || normalized.match(/^(\d{1,2})\s+([a-z]+)(?:\s+(\d{2}|\d{4}))?$/i);
+    if (named) {
+        const monthFirst = /^[a-z]/i.test(named[1]);
+        const month = DATE_MONTHS[(monthFirst ? named[1] : named[2]).toLowerCase()];
+        const day = Number(monthFirst ? named[2] : named[1]);
+        const year = named[3] ? Number(named[3].length === 2 ? `20${named[3]}` : named[3]) : now.getFullYear();
+        const date = new Date(year, month, day, 12);
+        return month === undefined || date.getMonth() !== month || date.getDate() !== day ? null : date;
+    }
+
+    if (!allowNumeric) return null;
+    const numeric = normalized.match(/^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2}|\d{4}))?$/);
+    if (!numeric) return null;
+    const month = Number(numeric[1]) - 1;
+    const day = Number(numeric[2]);
+    if (!numeric[3] && !allowPartialNumeric) return null;
+    const year = numeric[3] ? Number(numeric[3].length === 2 ? `20${numeric[3]}` : numeric[3]) : now.getFullYear();
+    const date = new Date(year, month, day, 12);
+    return date.getMonth() !== month || date.getDate() !== day ? null : date;
+}
+
+export function parseStandaloneDate(line, { allowNumeric = false, now = new Date() } = {}) {
     const trimmedLine = line.trim();
-    const date = new Date(trimmedLine);
-
-    if (isNaN(date.getTime())) {
-        return null;
-    }
-
-    const hasSeparator = /^(?:\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d{4}[/-]\d{1,2}[/-]\d{1,2})$/.test(trimmedLine);
-    const hasMonthName = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(trimmedLine);
-    if (!hasSeparator && !hasMonthName && !trimmedLine.toLowerCase().includes('today') && !trimmedLine.toLowerCase().includes('now')) {
-        return null;
-    }
-
-    return date;
+    if (/^(today|now|date)$/i.test(trimmedLine)) return new Date(now);
+    return parseDateLiteral(trimmedLine, { allowNumeric, now });
 }
 
 export function parseDateMath(line) {
@@ -22,7 +42,7 @@ export function parseDateMath(line) {
 
     const [, amountStr, unit, direction, baseDateStr] = match;
     const amount = parseInt(amountStr, 10);
-    const baseDate = (baseDateStr.toLowerCase() === 'today' || baseDateStr.toLowerCase() === 'now') ? new Date() : new Date(baseDateStr);
+    const baseDate = (baseDateStr.toLowerCase() === 'today' || baseDateStr.toLowerCase() === 'now') ? new Date() : parseDateLiteral(baseDateStr);
 
     if (isNaN(baseDate.getTime())) return null;
 
@@ -41,22 +61,22 @@ export function parseDateMath(line) {
 }
 
 export function parseDateOffset(line) {
-    const datePattern = '(?:today|now|date|\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}|(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\s+\\d{1,2},?\\s+\\d{4})';
-    const unitPattern = '(?:days?|d|weeks?|wks?|wk|months?|mos?|mo|years?|yrs?|yr)';
+    const datePattern = '(?:today|now|date|\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?|(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\s+\\d{1,2}(?:,?\\s+\\d{2,4})?)';
+    const unitPattern = '(?:minutes?|mins?|min|hours?|hrs?|hr|days?|d|weeks?|wks?|wk|months?|mos?|mo|years?|yrs?|yr)';
     const trimmedLine = line.trim();
     const agoMatch = trimmedLine.match(new RegExp(`^(\\d+)\\s*(${unitPattern})\\s+ago$`, 'i'));
-    const offsetMatch = trimmedLine.match(new RegExp(`^(${datePattern})\\s*(plus|add|minus|subtract|\\+|-)\\s*(\\d+)\\s*(${unitPattern})?$`, 'i'));
+    const offsetMatch = trimmedLine.match(new RegExp(`^(${datePattern})\\s*(plus|add|minus|subtract|\\+|-)\\s*(\\d+)\\s*(${unitPattern})$`, 'i'));
 
     const baseDate = agoMatch
         ? new Date()
-        : offsetMatch && (/^(today|now|date)$/i.test(offsetMatch[1]) ? new Date() : new Date(offsetMatch[1]));
+        : offsetMatch && (/^(today|now|date)$/i.test(offsetMatch[1]) ? new Date() : parseDateLiteral(offsetMatch[1], { allowPartialNumeric: true }));
     if (!baseDate || Number.isNaN(baseDate.getTime())) return null;
 
     const result = new Date(baseDate.getTime());
     const amount = agoMatch
         ? -Number(agoMatch[1])
         : Number(offsetMatch[3]) * (/^(minus|subtract|-)$/i.test(offsetMatch[2]) ? -1 : 1);
-    const unitText = agoMatch ? agoMatch[2] : (offsetMatch[4] || 'days');
+    const unitText = agoMatch ? agoMatch[2] : offsetMatch[4];
     switch (unitText.toLowerCase().replace(/s$/, '')) {
         case 'day': result.setDate(result.getDate() + amount); break;
         case 'd': result.setDate(result.getDate() + amount); break;
@@ -66,6 +86,10 @@ export function parseDateOffset(line) {
         case 'mo': result.setMonth(result.getMonth() + amount); break;
         case 'year': result.setFullYear(result.getFullYear() + amount); break;
         case 'yr': result.setFullYear(result.getFullYear() + amount); break;
+        case 'hour': result.setHours(result.getHours() + amount); break;
+        case 'hr': result.setHours(result.getHours() + amount); break;
+        case 'minute': result.setMinutes(result.getMinutes() + amount); break;
+        case 'min': result.setMinutes(result.getMinutes() + amount); break;
         default: return null;
     }
     return result;
@@ -149,6 +173,16 @@ const MONTHS = {
     sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10,
     dec: 11, december: 11
 };
+
+export function parseDateDifference(line, now = new Date()) {
+    const match = line.trim().match(/^(.+?)\s+-\s+(.+)$/);
+    if (!match) return null;
+    const start = parseDateLiteral(match[1], { allowPartialNumeric: true, now });
+    const end = parseDateLiteral(match[2], { allowPartialNumeric: true, now });
+    if (!start || !end) return null;
+    const days = Math.round(Math.abs(end - start) / 86400000);
+    return `${days} day${days === 1 ? '' : 's'}`;
+}
 
 function parseLooseDate(value, now) {
     const normalized = value.trim().replace(/,/g, '').toLowerCase();

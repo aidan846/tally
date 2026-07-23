@@ -2,6 +2,7 @@ import { parseUnitConversion } from './parser/units.js';
 import { preprocessNaturalLanguage } from './parser/preprocess.js';
 import {
     parseCalendarExpression,
+    parseDateDifference,
     parseDateDurationVariableArithmetic,
     parseDateMath,
     parseDateOffset,
@@ -73,7 +74,7 @@ function parseAssignment(line, decimalPlaces, aliases, variableStyles, prepareEx
         return { key, value: currentTime, output: currentTime };
     }
 
-    const standaloneDate = parseStandaloneDate(valueExpression);
+    const standaloneDate = parseStandaloneDate(valueExpression, { allowNumeric: true });
     if (standaloneDate instanceof Date) {
         parser.set(key, standaloneDate);
         return { key, value: standaloneDate, output: standaloneDate.toDateString() };
@@ -183,6 +184,7 @@ export function evaluateInput(fullInputText, decimalPlaces) {
                         const dateOffset = parseDateOffset(line);
                         const standaloneDate = parseStandaloneDate(line);
                         const dateMath = parseDateMath(line);
+                        const dateDifference = parseDateDifference(line);
                         const variableDate = parseDateDurationVariableArithmetic(line, parser) || parseVariableDateArithmetic(line, parser);
                         const percentage = parsePercentageOperations(line, parser, decimalPlaces);
                         const conversion = parseUnitConversion(line, decimalPlaces);
@@ -196,6 +198,8 @@ export function evaluateInput(fullInputText, decimalPlaces) {
                         } else if (dateMath instanceof Date) {
                             storedValue = dateMath;
                             result = dateMath.toDateString();
+                        } else if (dateDifference !== null) {
+                            result = dateDifference;
                         } else if (variableDate instanceof Date) {
                             storedValue = variableDate;
                             result = variableDate.toDateString();

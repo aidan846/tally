@@ -24,6 +24,15 @@ function parseDateReference(value, now) {
     return Number.isNaN(date.getTime()) ? null : dateKey(date);
 }
 
+const CRYPTO_SYMBOLS = new Set(['BTC', 'ETH', 'SOL']);
+
+function parseNumericOperand(value) {
+    const trimmed = value.trim();
+    const match = trimmed.match(/^\$?([+-]?(?:\d+(?:\.\d+)?|\.\d+))(?:\s*(USD))?$/i);
+    if (!match) return null;
+    return { value: Number(match[1]), currency: trimmed.startsWith('$') || match[2] ? 'USD' : null };
+}
+
 export function parseStockReference(value, now = new Date()) {
     const match = value.trim().match(/^(\^?[a-z][a-z0-9.-]{0,9})(?:\s+(.+))?$/i);
     if (!match) return null;
@@ -32,14 +41,15 @@ export function parseStockReference(value, now = new Date()) {
     const detail = (match[2] || '').trim();
     const normalized = detail.toLowerCase();
 
-    if (!detail || normalized === 'now' || normalized === 'stock') return { symbol, field: 'price', date: null };
-    if (normalized === 'high today') return { symbol, field: 'high', date: null };
-    if (normalized === 'low today') return { symbol, field: 'low', date: null };
-    if (normalized === 'open' || normalized === 'open price') return { symbol, field: 'open', date: null };
-    if (normalized === 'close' || normalized === 'close price' || normalized === 'closing price') return { symbol, field: 'close', date: null };
+    const asset = CRYPTO_SYMBOLS.has(symbol) && normalized !== 'stock' ? { assetType: 'crypto' } : {};
+    if (!detail || normalized === 'now' || normalized === 'stock') return { symbol, field: 'price', date: null, ...asset };
+    if (normalized === 'high today') return { symbol, field: 'high', date: null, ...asset };
+    if (normalized === 'low today') return { symbol, field: 'low', date: null, ...asset };
+    if (normalized === 'open' || normalized === 'open price') return { symbol, field: 'open', date: null, ...asset };
+    if (normalized === 'close' || normalized === 'close price' || normalized === 'closing price') return { symbol, field: 'close', date: null, ...asset };
 
     const date = parseDateReference(detail, now);
-    return date ? { symbol, field: 'close', date } : null;
+    return date ? { symbol, field: 'close', date, ...asset } : null;
 }
 
 export function parseStockExpression(value, now = new Date(), knownVariables = new Set()) {
@@ -53,11 +63,17 @@ export function parseStockExpression(value, now = new Date(), knownVariables = n
 
     if (knownVariables.has(expression.toLowerCase())) return null;
 
-    const difference = expression.match(/^(.*?)\s+-\s+(.*?)$/);
-    if (difference) {
-        const left = parseStockReference(difference[1], now);
-        const right = parseStockReference(difference[2], now);
-        return left && right ? { source, operator: 'subtract', operands: [left, right] } : null;
+    const operation = expression.match(/^(.*?)\s*([+\-*/])\s*(.*?)$/);
+    if (operation) {
+        const [, leftText, operator, rightText] = operation;
+        const left = parseStockReference(leftText, now) || parseNumericOperand(leftText);
+        const right = parseStockReference(rightText, now) || parseNumericOperand(rightText);
+        if (!left || !right || (!left.symbol && !right.symbol)) return null;
+        return {
+            source,
+            operator: { '+': 'add', '-': 'subtract', '*': 'multiply', '/': 'divide' }[operator],
+            operands: [left, right]
+        };
     }
 
     if (/^(?:sum|total|average|avg|mean|median|date|today|time|now|weather|temperature|temp|random|sqrt|abs|ceil|floor|round)$/i.test(expression)) return null;

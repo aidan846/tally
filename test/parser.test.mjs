@@ -61,7 +61,7 @@ const cases = [
     ['06/29/2026 - 20 days', 'Tue Jun 09 2026'],
     ['06/29/2026 plus 20 days', 'Sun Jul 19 2026'],
     ['06/29/2026 minus 1 year', 'Sun Jun 29 2025']
-    ,['06/29/2026 - 10', 'Fri Jun 19 2026']
+    ,['06/29/2026 - 10', '-9.9999']
     ,['06/29/2026 - 1 yr', 'Sun Jun 29 2025']
 ];
 
@@ -136,6 +136,21 @@ assert.deepEqual(evaluateInput('Price = 40\nPrice', 2), ['40.00', '40.00']);
 assert.equal(evaluateInput('pi', 4)[0], '3.1416');
 assert.equal(evaluateInput('pi * 2', 4)[0], '6.2832');
 assert.deepEqual(evaluateInput('\n5+5\n\n3*2', 2), ['', '10.00', '', '6.00'], 'blank spacer rows');
+
+const currentYear = new Date().getFullYear();
+assert.equal(evaluateInput('Dec 30', 2)[0], new Date(currentYear, 11, 30, 12).toDateString());
+assert.equal(evaluateInput('12/30/19', 4)[0], '0.0211', 'numeric dates default to division');
+assert.equal(evaluateInput('12-30-2019', 4)[0], '-2037.0000', 'numeric dates default to subtraction');
+assert.equal(evaluateInput('12/30/19 + 5 days', 2)[0], 'Sat Jan 04 2020');
+assert.equal(evaluateInput('12/30/2019 + 5 days', 2)[0], 'Sat Jan 04 2020');
+assert.equal(evaluateInput('12-30-2019 + 5 days', 2)[0], 'Sat Jan 04 2020');
+assert.equal(evaluateInput('12/30/19 + 10', 2)[0], '10.02');
+assert.equal(evaluateInput('12/30 + 3', 4)[0], '3.4000');
+assert.equal(evaluateInput('04-24', 4)[0], '-20.0000');
+assert.equal(evaluateInput('12/30 + 3 days', 2)[0], new Date(currentYear, 11, 33, 12).toDateString());
+assert.equal(evaluateInput('04-24 + 3 days', 2)[0], new Date(currentYear, 3, 27, 12).toDateString());
+assert.equal(evaluateInput('Dec 30 - April 29', 2)[0], '245 days');
+assert.equal(evaluateInput('Dec 30 2026 - April 29 1995', 2)[0], '11568 days');
 
 const randomResult = Number(evaluateInput('random number between 10 and 20', 2)[0]);
 assert.ok(Number.isInteger(randomResult) && randomResult >= 10 && randomResult <= 20);

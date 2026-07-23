@@ -246,12 +246,13 @@ body.light .container::-webkit-scrollbar-thumb, body.light #settings-page::-webk
 #update-notice-open:hover { background: #93c5fd; }
 .update-notice-dismiss { align-self: center; background: transparent; border: 0; color: #94a3b8; cursor: pointer; display: grid; flex: 0 0 28px; font-size: 1.35rem; height: 28px; line-height: 1; margin-left: 2px; padding: 0; place-items: center; width: 28px; }
 .update-notice-dismiss:hover { color: #fff; }
-.support-toast { background: #272a34; border: 1px solid rgba(255,255,255,0.16); border-radius: 9px; bottom: 14px; box-shadow: 0 12px 32px rgba(0,0,0,0.35); color: #f8fafc; display: grid; gap: 0.7rem; max-width: min(340px, calc(100vw - 28px)); padding: 0.8rem 2.5rem 0.8rem 0.9rem; position: fixed; right: 14px; z-index: 1450; }
+.support-toast { background: #272a34; border: 1px solid rgba(255,255,255,0.16); border-radius: 9px; bottom: 14px; box-shadow: 0 12px 32px rgba(0,0,0,0.35); box-sizing: border-box; color: #f8fafc; display: grid; gap: 0.7rem; left: 50%; max-width: 620px; padding: 0.8rem 2.25rem 0.8rem 0.9rem; position: fixed; transform: translateX(-50%); width: calc(100vw - 28px); z-index: 1450; }
 .support-toast[hidden] { display: none; }
 .support-toast-copy { display: grid; gap: 0.22rem; }
 .support-toast-copy strong { color: #fef3c7; font-size: 0.8rem; }
 .support-toast-copy span { color: #cbd5e1; font-size: 0.68rem; line-height: 1.35; }
-.support-toast-links .support-link { font-size: 0.64rem; min-height: 28px; padding: 0.28rem 0.42rem; }
+.support-toast-links { flex-wrap: nowrap; gap: 0.35rem; justify-content: space-between; }
+.support-toast-links .support-link { font-size: 0.62rem; min-height: 28px; padding: 0.28rem 0.38rem; white-space: nowrap; }
 .support-toast-dismiss { background: transparent; border: 0; color: #94a3b8; cursor: pointer; font-size: 1.35rem; line-height: 1; padding: 0.25rem; position: absolute; right: 0.36rem; top: 0.34rem; }
 .support-toast-dismiss:hover { color: #fff; }
 .currency-status { background: rgba(120, 53, 15, 0.92); border: 1px solid rgba(251, 191, 36, 0.35); border-radius: 7px; bottom: 12px; color: #fef3c7; font-size: 0.66rem; left: 12px; padding: 0.45rem 0.6rem; position: fixed; z-index: 1400; }

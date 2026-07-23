@@ -1,6 +1,6 @@
 {
-  "name": "tally-tauri",
-  "version": "2.1.0",
+  "name": "tally",
+  "version": "2.1.1",
   "description": "A simple calculator for your daily tasks.",
   "type": "module",
   "scripts": {
@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "sync-version": "node scripts/sync-version.mjs",
     "tauri:dev": "tauri dev",
+    "pretauri:build": "npm run sync-version",
     "tauri:build": "tauri build",
     "build:pwa": "vite build",
     "test": "node test/parser.test.mjs && node test/stocks.test.mjs && node test/weather.test.mjs && node test/answer-format.test.mjs && node test/platform-modules.test.mjs",

@@ -4,6 +4,8 @@ import { resolveStockData } from '../src/stocks/provider.js';
 const now = new Date(2026, 6, 20, 12);
 
 assert.deepEqual(parseStockReference('MSFT', now), { symbol: 'MSFT', field: 'price', date: null });
+assert.deepEqual(parseStockReference('BTC', now), { symbol: 'BTC', field: 'price', date: null, assetType: 'crypto' });
+assert.deepEqual(parseStockReference('BTC Stock', now), { symbol: 'BTC', field: 'price', date: null });
 assert.deepEqual(parseStockReference('msft', now), { symbol: 'MSFT', field: 'price', date: null });
 assert.deepEqual(parseStockReference('MsFt Stock', now), { symbol: 'MSFT', field: 'price', date: null });
 assert.deepEqual(parseStockReference('nq', now), { symbol: 'NQ', field: 'price', date: null });
@@ -37,6 +39,22 @@ assert.deepEqual(parseStockExpression('MSFT now - MSFT 3 months ago', now), {
     operands: [
         { symbol: 'MSFT', field: 'price', date: null },
         { symbol: 'MSFT', field: 'close', date: '2026-04-20' }
+    ]
+});
+assert.deepEqual(parseStockExpression('NVDA + $100', now), {
+    source: 'NVDA + $100',
+    operator: 'add',
+    operands: [
+        { symbol: 'NVDA', field: 'price', date: null },
+        { value: 100, currency: 'USD' }
+    ]
+});
+assert.deepEqual(parseStockExpression('BTC / 2', now), {
+    source: 'BTC / 2',
+    operator: 'divide',
+    operands: [
+        { symbol: 'BTC', field: 'price', date: null, assetType: 'crypto' },
+        { value: 2, currency: null }
     ]
 });
 
@@ -79,5 +97,21 @@ assert.deepEqual(
     await resolveStockData(parseStockExpression('AAPL High Today', now), fetchMock),
     { symbol: 'AAPL', value: 430, currency: 'USD' }
 );
+assert.deepEqual(
+    await resolveStockData(parseStockExpression('NVDA + $100', now), fetchMock),
+    { symbol: 'NVDA', value: 520.5, currency: 'USD' }
+);
+let cryptoUrl;
+await resolveStockData(parseStockExpression('BTC', now), async url => {
+    cryptoUrl = String(url);
+    return fetchMock();
+});
+assert.match(cryptoUrl, /BTC-USD\?/);
+let stockUrl;
+await resolveStockData(parseStockExpression('BTC Stock', now), async url => {
+    stockUrl = String(url);
+    return fetchMock();
+});
+assert.match(stockUrl, /BTC\?/);
 
 console.log('Passed stock query and provider cases.');

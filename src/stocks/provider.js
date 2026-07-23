@@ -10,10 +10,12 @@ const SYMBOL_ALIASES = {
   NASDAQ: '^IXIC',
   '^NASDAQ': '^IXIC'
 };
+const CRYPTO_ALIASES = { BTC: 'BTC-USD', ETH: 'ETH-USD', SOL: 'SOL-USD' };
 const cache = new Map();
 
 function validateReference(reference) {
   if (!reference || !/^\^?[A-Z][A-Z0-9.-]{0,9}$/.test(reference.symbol)) throw new Error('Invalid stock symbol');
+  if (reference.assetType && !['stock', 'crypto'].includes(reference.assetType)) throw new Error('Invalid asset type');
   if (!['price', 'open', 'high', 'low', 'close'].includes(reference.field)) throw new Error('Invalid stock field');
   if (reference.date !== null && !/^\d{4}-\d{2}-\d{2}$/.test(reference.date)) throw new Error('Invalid stock date');
 }
@@ -31,7 +33,9 @@ function dateRange(dateKey) {
 }
 
 async function loadChart(reference, fetchImpl) {
-  const symbol = SYMBOL_ALIASES[reference.symbol] || reference.symbol;
+  const symbol = reference.assetType === 'crypto'
+    ? CRYPTO_ALIASES[reference.symbol] || reference.symbol
+    : SYMBOL_ALIASES[reference.symbol] || reference.symbol;
   const params = new URLSearchParams({ interval: '1d', events: 'history' });
   if (reference.date) {
     const range = dateRange(reference.date);
@@ -84,20 +88,39 @@ async function lookup(reference, fetchImpl) {
   return result;
 }
 
+function isReference(operand) {
+  return operand && typeof operand.symbol === 'string';
+}
+
+function isNumericOperand(operand) {
+  return operand && Number.isFinite(operand.value) && (operand.currency === null || operand.currency === 'USD');
+}
+
 async function resolveStockData(query, fetchImpl = fetch) {
   if (!query || !Array.isArray(query.operands) || query.operands.length < 1 || query.operands.length > 2) {
     throw new Error('Invalid stock query');
   }
 
-  const values = await Promise.all(query.operands.map(reference => lookup(reference, fetchImpl)));
-  if (query.operator === null && values.length === 1) return values[0];
-  if (query.operator !== 'subtract' || values.length !== 2) throw new Error('Invalid stock operation');
-  if (values[0].currency !== values[1].currency) throw new Error('Stock currencies do not match');
+  const values = await Promise.all(query.operands.map(operand => isReference(operand) ? lookup(operand, fetchImpl) : operand));
+  if (query.operator === null && values.length === 1 && isReference(query.operands[0])) return values[0];
+  if (!['add', 'subtract', 'multiply', 'divide'].includes(query.operator) || values.length !== 2) throw new Error('Invalid stock operation');
+  if (!values.every(value => isReference(value) || isNumericOperand(value))) throw new Error('Invalid stock operand');
+  if (query.operator === 'divide' && values[1].value === 0) throw new Error('Cannot divide by zero');
+
+  const currencies = values.map(value => value.currency).filter(Boolean);
+  if (currencies.length === 2 && currencies[0] !== currencies[1]) throw new Error('Stock currencies do not match');
+  const currency = currencies[0] || 'USD';
+  const value = {
+    add: values[0].value + values[1].value,
+    subtract: values[0].value - values[1].value,
+    multiply: values[0].value * values[1].value,
+    divide: values[0].value / values[1].value
+  }[query.operator];
 
   return {
-    symbol: `${values[0].symbol}-${values[1].symbol}`,
-    value: values[0].value - values[1].value,
-    currency: values[0].currency
+    symbol: query.operands.filter(isReference).map(reference => reference.symbol).join(` ${query.operator} `),
+    value,
+    currency
   };
 }
 
