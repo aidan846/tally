@@ -11,7 +11,8 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "build:pwa": "vite build",
-    "test": "node test/parser.test.mjs && node test/stocks.test.mjs && node test/weather.test.mjs && node test/answer-format.test.mjs && node test/platform-modules.test.mjs"
+    "test": "node test/parser.test.mjs && node test/stocks.test.mjs && node test/weather.test.mjs && node test/answer-format.test.mjs && node test/platform-modules.test.mjs",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

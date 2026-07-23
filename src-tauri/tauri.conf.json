@@ -36,7 +36,7 @@
     "category": "Utility",
     "shortDescription": "A smart calculator for daily tasks.",
     "longDescription": "Tally is a fast, natural-language calculator with conversions, dates, percentages, statistics, stocks, and weather.",
-    "copyright": "Copyright © 2026 aidan846",
+    "copyright": "Copyright \u00A9 2026 aidan846",
     "windows": {
       "wix": {
         "bannerPath": "windows/wix-banner.bmp",
