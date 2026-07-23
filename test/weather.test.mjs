@@ -8,6 +8,7 @@ assert.deepEqual(parseWeatherQuery('Weather in Charlotte NC'), { source: 'Weathe
 assert.deepEqual(parseWeatherQuery('weather in Sydney'), { source: 'weather in Sydney', location: 'Sydney' });
 assert.deepEqual(parseWeatherQuery('temperature in charlotte'), { source: 'temperature in charlotte', location: 'charlotte' });
 assert.deepEqual(parseWeatherQuery('temp in madrid'), { source: 'temp in madrid', location: 'madrid' });
+assert.deepEqual(parseWeatherQuery('rain in Seattle'), { source: 'rain in Seattle', location: 'Seattle', kind: 'rain' });
 assert.equal(parseWeatherQuery('temperature'), null);
 assert.equal(parseWeatherQuery('weather tomorrow'), null);
 
@@ -50,6 +51,19 @@ const sydneyFetch = async url => {
 assert.deepEqual(
     await getWeatherData({ location: 'Sydney' }, sydneyFetch),
     { temperature: 24, unit: 'C', condition: 'Cloudy', location: 'Sydney' }
+);
+
+const rainFetch = async url => {
+    if (String(url).startsWith('https://geocoding-api.open-meteo.com')) {
+        return { ok: true, json: async () => ({ results: [{ name: 'Seattle', latitude: 47.61, longitude: -122.33, country_code: 'US' }] }) };
+    }
+    assert.match(String(url), /daily=rain_sum/);
+    assert.match(String(url), /precipitation_unit=inch/);
+    return { ok: true, json: async () => ({ daily: { rain_sum: [0.24] } }) };
+};
+assert.deepEqual(
+    await getWeatherData({ location: 'Seattle', kind: 'rain' }, rainFetch),
+    { rain: 0.24, unit: 'in', location: 'Seattle' }
 );
 
 const coordinateFetch = async url => {

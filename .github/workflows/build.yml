@@ -29,13 +29,17 @@ jobs:
           - os: windows-latest
             label: windows-x64
             target: x86_64-pc-windows-msvc
-            bundles: nsis
-            bundlePath: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            bundles: nsis,msi
+            bundlePath: |
+              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
           - os: windows-latest
             label: windows-x86
             target: i686-pc-windows-msvc
-            bundles: nsis
-            bundlePath: src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
+            bundles: nsis,msi
+            bundlePath: |
+              src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
+              src-tauri/target/i686-pc-windows-msvc/release/bundle/msi/*.msi
           - os: macos-15-intel
             label: macos-intel
             target: x86_64-apple-darwin
@@ -121,12 +125,14 @@ jobs:
           }
 
           check_count '*.exe' 2
+          check_count '*.msi' 2
           check_count '*.dmg' 2
           check_count '*.deb' 1
           check_count '*.AppImage' 1
 
           unexpected=$(find release-assets -type f ! \( \
             -name '*.exe' -o \
+            -name '*.msi' -o \
             -name '*.dmg' -o \
             -name '*.deb' -o \
             -name '*.AppImage' \
@@ -145,6 +151,7 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             release-assets/**/*.exe
+            release-assets/**/*.msi
             release-assets/**/*.dmg
             release-assets/**/*.deb
             release-assets/**/*.AppImage

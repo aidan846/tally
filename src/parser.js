@@ -163,8 +163,8 @@ export function evaluateInput(fullInputText, decimalPlaces) {
             } else {
                 const cssUnits = parseCssScreenUnits(line, decimalPlaces, prepareExpression);
                 const timeZone = cssUnits === null ? parseTimeZoneConversion(line) : null;
-                const calendar = cssUnits === null && timeZone === null ? parseCalendarExpression(line) : null;
-                const currentTime = cssUnits === null && timeZone === null && calendar === null ? parseCurrentTimeAndDate(line) : null;
+                const currentTime = cssUnits === null && timeZone === null ? parseCurrentTimeAndDate(line) : null;
+                const calendar = cssUnits === null && timeZone === null && currentTime === null ? parseCalendarExpression(line) : null;
 
                 if (cssUnits !== null) {
                     result = cssUnits;

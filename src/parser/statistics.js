@@ -3,6 +3,40 @@ function numbersFrom(value) {
     return matches ? matches.map(Number) : [];
 }
 
+function calculateListOperation(kind, values) {
+    if (!values.length) return null;
+    switch (kind) {
+        case 'sum': return values.reduce((total, value) => total + value, 0);
+        case 'product': return values.reduce((total, value) => total * value, 1);
+        case 'difference': return values.slice(1).reduce((total, value) => total - value, values[0]);
+        case 'quotient': return values.slice(1).reduce((total, value) => total / value, values[0]);
+        case 'average':
+        case 'avg':
+        case 'mean': return values.reduce((total, value) => total + value, 0) / values.length;
+        case 'median': {
+            const sorted = [...values].sort((left, right) => left - right);
+            return sorted.length % 2
+                ? sorted[(sorted.length - 1) / 2]
+                : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+        }
+        case 'mode': {
+            const counts = new Map();
+            let best = values[0];
+            let highestCount = 0;
+            for (const value of values) {
+                const count = (counts.get(value) || 0) + 1;
+                counts.set(value, count);
+                if (count > highestCount) {
+                    best = value;
+                    highestCount = count;
+                }
+            }
+            return best;
+        }
+        default: return null;
+    }
+}
+
 export function parseStatistics(line, decimalPlaces, random = Math.random) {
     const normalized = line.trim().toLowerCase();
     if (normalized === 'random number') {
@@ -22,15 +56,10 @@ export function parseStatistics(line, decimalPlaces, random = Math.random) {
         return math.format(midpoint, { notation: 'fixed', precision: decimalPlaces });
     }
 
-    const listMatch = normalized.match(/^(average|mean|median)\s+(.+)$/);
+    const listMatch = normalized.match(/^(sum|product|quotient|difference|average|avg|mean|median|mode)\s+(?:of\s+)?(.+)$/);
     if (!listMatch) return null;
     const values = numbersFrom(listMatch[2]);
     if (!values.length) return null;
-    values.sort((left, right) => left - right);
-    const result = listMatch[1] === 'median'
-        ? values.length % 2
-            ? values[(values.length - 1) / 2]
-            : (values[values.length / 2 - 1] + values[values.length / 2]) / 2
-        : values.reduce((sum, value) => sum + value, 0) / values.length;
-    return math.format(result, { notation: 'fixed', precision: decimalPlaces });
+    const result = calculateListOperation(listMatch[1], values);
+    return result === null || !Number.isFinite(result) ? null : math.format(result, { notation: 'fixed', precision: decimalPlaces });
 }

@@ -29,7 +29,66 @@ const TIMEZONE_MAP = {
     '': Intl.DateTimeFormat().resolvedOptions().timeZone
 };
 
+function addTemporalUnit(date, amount, unit) {
+    switch (unit.toLowerCase().replace(/s$/, '')) {
+        case 'second': date.setSeconds(date.getSeconds() + amount); break;
+        case 'minute': date.setMinutes(date.getMinutes() + amount); break;
+        case 'hour': date.setHours(date.getHours() + amount); break;
+        case 'day': date.setDate(date.getDate() + amount); break;
+        case 'week': date.setDate(date.getDate() + amount * 7); break;
+        case 'month': date.setMonth(date.getMonth() + amount); break;
+        case 'year': date.setFullYear(date.getFullYear() + amount); break;
+        default: return false;
+    }
+    return true;
+}
+
+function formatTime(date, includeSeconds = false) {
+    return date.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', hour12: true,
+        ...(includeSeconds ? { second: '2-digit' } : {})
+    });
+}
+
+function formatWeek(date) {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - start.getDay());
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    const startMonth = start.toLocaleDateString('en-US', { month: 'long' });
+    const endMonth = end.toLocaleDateString('en-US', { month: 'long' });
+    return startMonth === endMonth
+        ? `${startMonth} ${start.getDate()} - ${end.getDate()}`
+        : `${startMonth} ${start.getDate()} - ${endMonth} ${end.getDate()}`;
+}
+
+function parseTemporalArithmetic(line, now = new Date()) {
+    const match = line.trim().match(/^(time|now|today|date|week|month)\s*([+-])\s*(\d+)\s*(seconds?|minutes?|hours?|days?|weeks?|months?|years?)?$/i);
+    if (!match) return null;
+    const [, base, operator, amountText, explicitUnit] = match;
+    const defaultUnit = /^(time|now)$/i.test(base) ? 'minute'
+        : /^week$/i.test(base) ? 'week'
+        : /^month$/i.test(base) ? 'month'
+        : 'day';
+    const unit = explicitUnit || defaultUnit;
+    const result = new Date(now);
+    if (!addTemporalUnit(result, Number(amountText) * (operator === '-' ? -1 : 1), unit)) return null;
+    if (/^(time)$/i.test(base)) return formatTime(result, /^seconds?/i.test(unit));
+    if (/^(now)$/i.test(base)) {
+        if (/^(seconds?|minutes?|hours?)$/i.test(unit)) {
+            return formatTime(result, /^seconds?/i.test(unit)).replace(/^0/, '').replace(/\s(AM|PM)$/, (_, meridiem) => ` ${meridiem.toLowerCase()}`);
+        }
+        return result.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    }
+    if (/^week$/i.test(base)) return formatWeek(result);
+    if (/^month$/i.test(base)) return result.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    return result.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 export function parseCurrentTimeAndDate(line) {
+    const temporalArithmetic = parseTemporalArithmetic(line);
+    if (temporalArithmetic !== null) return temporalArithmetic;
     const lowerLine = line.toLowerCase().trim();
     let timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -94,6 +153,10 @@ export function parseCurrentTimeAndDate(line) {
         return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     } else if (lowerLine === 'now') {
         return new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+    } else if (lowerLine === 'week') {
+        return formatWeek(new Date());
+    } else if (lowerLine === 'month') {
+        return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }
 
     return null;

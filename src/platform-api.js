@@ -19,12 +19,26 @@ import { isNewerVersion } from './version.js';
 
 const RELEASES_URL = 'https://github.com/aidan846/tally/releases/latest';
 const RELEASE_API_URL = 'https://api.github.com/repos/aidan846/tally/releases/latest';
+const CORS_PROXY_URL = 'https://corsproxy.io/?url=';
+const SUPPORT_URLS = new Set([
+  'https://ko-fi.com/aj006',
+  'https://buymeacoffee.com/aj06',
+  'https://www.paypal.com/donate/?business=WK6MSSHYNPCHS'
+]);
 const CONFIG_KEY = 'tally-config';
 const isTauri = '__TAURI_INTERNALS__' in window;
 const platform = /Mac/i.test(navigator.userAgent) ? 'darwin' : /Windows/i.test(navigator.userAgent) ? 'win32' : isTauri ? 'linux' : 'web';
 const appWindow = isTauri ? getCurrentWindow() : null;
 const request = isTauri ? tauriFetch : window.fetch.bind(window);
 const unitDefinitions = [area, data, length, mass, speed, temperature, time, volume];
+
+function stockRequest(url, options = {}) {
+  if (isTauri) return tauriFetch(url, options);
+  // Yahoo's chart API does not grant GitHub Pages CORS access. The browser
+  // uses a read-only CORS proxy, while native builds keep the direct request.
+  const { headers, ...fetchOptions } = options;
+  return window.fetch(`${CORS_PROXY_URL}${encodeURIComponent(url)}`, fetchOptions);
+}
 
 function readConfig() {
   try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'); } catch { return {}; }
@@ -85,7 +99,7 @@ window.electronAPI = {
   },
   setZoomFactor: async factor => factor,
   getUnitDefinitions: async () => unitDefinitions,
-  getStockData: query => resolveStockData(query, request),
+  getStockData: query => resolveStockData(query, stockRequest),
   getWeatherData: query => getWeatherData(query, request),
   fetchJson: async url => {
     const response = await request(url, { signal: AbortSignal.timeout(8000) });
@@ -115,5 +129,9 @@ window.electronAPI = {
   onUpdateProgress: () => {},
   restartApp: () => window.location.reload(),
   openReleasesPage: () => isTauri ? openUrl(RELEASES_URL) : window.open(RELEASES_URL, '_blank', 'noopener'),
+  openExternalUrl: url => {
+    if (!SUPPORT_URLS.has(url)) throw new Error('Unsupported external URL');
+    return isTauri ? openUrl(url) : window.open(url, '_blank', 'noopener');
+  },
   getAppName: async () => isTauri ? getName() : 'Tally'
 };

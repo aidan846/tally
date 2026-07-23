@@ -36,6 +36,7 @@ const cases = [
     ['5K to F', '-450.6700 f'],
     ['5ft to cm', '152.4000 cm'],
     ['5 ft in cm', '152.4000 cm'],
+    ['1m 20cm to ft', '3.9370 ft'],
     ['5 mile to cm', '804672.0000 cm'],
     ['5 feet to mi', '0.0009 mi'],
     ['5 feet in', '60.0000 in'],
@@ -108,6 +109,13 @@ const requestedCases = [
     ['average 1 2 3 4 5', '3.0000'],
     ['mean 1 2 3 4 5', '3.0000'],
     ['median 1 8 3 4 5', '4.0000']
+    ,['sum 10 and 2', '12.0000']
+    ,['sum 10,2', '12.0000']
+    ,['sum 10 2', '12.0000']
+    ,['product 10, 2', '20.0000']
+    ,['quotient 10 2', '5.0000']
+    ,['difference 10 and 2', '8.0000']
+    ,['mode 1 2 2 3', '2.0000']
 ];
 
 for (const [input, expected] of requestedCases) {
@@ -118,6 +126,10 @@ assert.match(evaluateInput('now + 20 minutes', 2)[0], /^\d{1,2}:\d{2}\s(?:am|pm)
 assert.equal(evaluateInput('3:30 am NY to Hamburg', 2)[0], '9:30 am');
 assert.equal(evaluateInput('3:30 New York to Hamburg', 2)[0], '9:30 am');
 assert.equal(evaluateInput('14:20 New York to Beijing', 2)[0], '2:20 am');
+assert.match(evaluateInput('time + 1', 2)[0], /^\d{2}:\d{2} (AM|PM)$/);
+assert.match(evaluateInput('time - 1 hour', 2)[0], /^\d{2}:\d{2} (AM|PM)$/);
+assert.match(evaluateInput('week', 2)[0], /^[A-Z][a-z]+ \d{1,2} - (?:[A-Z][a-z]+ )?\d{1,2}$/);
+assert.match(evaluateInput('month + 1', 2)[0], /^[A-Z][a-z]+ \d{4}$/);
 
 assert.deepEqual(evaluateInput('Price: 40\nPrice', 2), ['40.00', '40.00']);
 assert.deepEqual(evaluateInput('Price = 40\nPrice', 2), ['40.00', '40.00']);

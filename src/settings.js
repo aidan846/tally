@@ -1,5 +1,39 @@
 export let decimalPlaces = 2;
 const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+const SUPPORT_PROMPT_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+const SUPPORT_PROMPT_FIRST_LAUNCH = 3;
+
+function openSupportLink(url) {
+    window.electronAPI.openExternalUrl(url);
+}
+
+function initializeSupportLinks() {
+    document.querySelectorAll('[data-support-link]').forEach(link => {
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            openSupportLink(link.href);
+        });
+    });
+}
+
+function scheduleSupportPrompt(config) {
+    const toast = document.getElementById('support-toast');
+    const dismissButton = document.getElementById('support-toast-dismiss');
+    const launchCount = Number(config.launchCount) || 0;
+    const nextLaunchCount = launchCount + 1;
+    const lastPromptAt = Number(config.lastSupportPromptAt) || 0;
+    const canShow = nextLaunchCount >= SUPPORT_PROMPT_FIRST_LAUNCH
+        && Date.now() - lastPromptAt >= SUPPORT_PROMPT_INTERVAL_MS;
+
+    window.electronAPI.setConfig({ launchCount: nextLaunchCount });
+    dismissButton?.addEventListener('click', () => { toast.hidden = true; });
+    if (!canShow) return;
+
+    window.setTimeout(() => {
+        toast.hidden = false;
+        window.electronAPI.setConfig({ lastSupportPromptAt: Date.now() });
+    }, 1000);
+}
 
 export function initializeWindowControls() {
     const minimizeButton = document.getElementById('minimize-button');
@@ -30,9 +64,11 @@ function applyTheme(theme) {
 
 export async function initializeSettings() {
     const config = await window.electronAPI.getConfig();
+    initializeSupportLinks();
+    scheduleSupportPrompt(config);
     const themeSelect = document.getElementById('theme-select');
     const decimalsSelect = document.getElementById('decimals-select');
-    const zoomSelect = document.getElementById('zoom-select');
+    const fontSizeSelect = document.getElementById('font-size-select');
     const settingsPage = document.getElementById('settings-page');
     const settingsClose = document.getElementById('settings-close');
     const checkUpdatesButton = document.getElementById('check-updates-button');
@@ -44,9 +80,11 @@ export async function initializeSettings() {
     themeSelect.value = initialTheme;
     applyTheme(initialTheme);
 
-    const initialZoom = Number(config.zoom) || 1.25;
-    zoomSelect.value = String(initialZoom);
-    document.documentElement.style.setProperty('--content-zoom', String(initialZoom));
+    // `zoom` was the old preference name. Keep it as a one-time fallback so
+    // existing users retain their chosen size, while the new default is 100%.
+    const initialFontSize = Number(config.fontSize ?? config.zoom) || 1;
+    fontSizeSelect.value = String(initialFontSize);
+    document.documentElement.style.setProperty('--content-font-scale', String(initialFontSize));
 
     if (typeof config.decimals === 'number') {
         decimalPlaces = config.decimals;
@@ -71,10 +109,10 @@ export async function initializeSettings() {
         await window.electronAPI.setConfig({ decimals });
     });
 
-    zoomSelect.addEventListener('change', async (e) => {
-        const zoom = Number(e.target.value) || 1;
-        document.documentElement.style.setProperty('--content-zoom', String(zoom));
-        await window.electronAPI.setConfig({ zoom });
+    fontSizeSelect.addEventListener('change', async (e) => {
+        const fontSize = Number(e.target.value) || 1;
+        document.documentElement.style.setProperty('--content-font-scale', String(fontSize));
+        await window.electronAPI.setConfig({ fontSize });
     });
 
     const settingsButton = document.getElementById('settings-button');

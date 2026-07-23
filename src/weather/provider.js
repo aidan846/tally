@@ -70,13 +70,22 @@ async function getWeatherData(query, fetchImpl = fetch) {
     useFahrenheit = FAHRENHEIT_COUNTRIES.has(location.countryCode);
   }
 
+  const isRainQuery = query.kind === 'rain';
   const params = new URLSearchParams({
     latitude: String(location.latitude),
     longitude: String(location.longitude),
-    current: 'temperature_2m,weather_code',
-    temperature_unit: useFahrenheit ? 'fahrenheit' : 'celsius'
+    ...(isRainQuery
+      ? { daily: 'rain_sum', precipitation_unit: useFahrenheit ? 'inch' : 'mm', timezone: 'auto' }
+      : { current: 'temperature_2m,weather_code', temperature_unit: useFahrenheit ? 'fahrenheit' : 'celsius' })
   });
   const data = await requestJson(`${WEATHER_URL}?${params}`, fetchImpl);
+  if (isRainQuery) {
+    const rain = data.daily?.rain_sum?.[0];
+    if (!Number.isFinite(rain)) throw new Error('Rain forecast unavailable');
+    const result = { rain, unit: useFahrenheit ? 'in' : 'mm', location: location.name };
+    cache.set(cacheKey, { value: result, expiresAt: Date.now() + 600000 });
+    return result;
+  }
   const temperature = data.current?.temperature_2m;
   const weatherCode = data.current?.weather_code;
   if (!Number.isFinite(temperature) || !Number.isFinite(weatherCode)) throw new Error('Current weather unavailable');

@@ -234,7 +234,9 @@ function formatStockValue(result) {
 }
 
 function formatWeatherValue(result) {
-    return `${result.temperature}° ${result.unit} (${result.condition})`;
+    return Number.isFinite(result.rain)
+        ? `${result.rain} ${result.unit} rain (${result.location})`
+        : `${result.temperature}° ${result.unit} (${result.condition})`;
 }
 
 function getCurrentCoordinates() {
@@ -384,6 +386,7 @@ function createRow(value = '', { showPlaceholder = false } = {}) {
 
     input.addEventListener('input', () => scheduleUpdateOutputs(input));
     input.addEventListener('keydown', event => {
+        if (navigateCalculationRows(input, event)) return;
         if (
             event.key === 'Backspace'
             && input.selectionStart === 0
@@ -415,6 +418,7 @@ function initializeCalculator() {
     const firstOutput = calculator.querySelector('.calculation-output');
     firstInput.addEventListener('input', () => scheduleUpdateOutputs(firstInput));
     firstInput.addEventListener('keydown', event => {
+        if (navigateCalculationRows(firstInput, event)) return;
         if (event.key === 'Enter' && !event.isComposing) {
             event.preventDefault();
             firstInput.closest('.calculation-row').classList.remove('has-placeholder');
@@ -460,6 +464,29 @@ function deleteRow(row, { preferPrevious = false } = {}) {
     updateOutputs();
 }
 
+function navigateCalculationRows(input, event) {
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || input.selectionStart !== input.selectionEnd) return false;
+    const row = input.closest('.calculation-row');
+    if (event.key === 'ArrowDown' && input.selectionStart === input.value.length) {
+        const nextInput = row.nextElementSibling?.querySelector('.calculation-input');
+        if (!nextInput) return false;
+        event.preventDefault();
+        nextInput.focus();
+        nextInput.setSelectionRange(0, 0);
+        return true;
+    }
+    if (event.key === 'ArrowUp' && input.selectionStart === 0) {
+        const previousInput = row.previousElementSibling?.querySelector('.calculation-input');
+        if (!previousInput) return false;
+        event.preventDefault();
+        previousInput.focus();
+        const end = previousInput.value.length;
+        previousInput.setSelectionRange(end, end);
+        return true;
+    }
+    return false;
+}
+
 function focusCurrentInput() {
     const input = calculator.querySelector('.calculation-row:last-child .calculation-input');
     if (!input) return;
@@ -467,6 +494,18 @@ function focusCurrentInput() {
     const end = input.value.length;
     input.setSelectionRange(end, end);
 }
+
+document.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || !(event.target instanceof Element)) return;
+    const target = event.target;
+    // The calculator itself is a single typing surface: clicks on an older row,
+    // its result, or unused space should always return to the newest input.
+    // Overlays and the title bar retain their own controls and focus behavior.
+    if (target.closest('#titlebar, #settings-page, #update-notice, #support-toast, #currency-status')) return;
+    if (!target.closest('.container') && target !== document.body) return;
+    event.preventDefault();
+    focusCurrentInput();
+}, { capture: true });
 
 function insertIntoNewestInput(key) {
     const input = calculator.querySelector('.calculation-row:last-child .calculation-input');
@@ -560,11 +599,31 @@ document.addEventListener('keydown', event => {
         event.preventDefault();
         return;
     }
-    if (event.defaultPrevented || event.key.length !== 1 || event.metaKey || event.ctrlKey || event.altKey) return;
-
     const activeElement = document.activeElement;
     if (activeElement?.closest?.('#settings-page') || activeElement === document.getElementById('settings-button')) return;
     if (activeElement?.classList?.contains('calculation-input')) return;
+
+    const newestInput = calculator.querySelector('.calculation-row:last-child .calculation-input');
+    if (event.key === 'Backspace' && newestInput && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        const start = newestInput.selectionStart;
+        const end = newestInput.selectionEnd;
+        if (start !== end) newestInput.setRangeText('', start, end, 'end');
+        else if (start > 0) newestInput.setRangeText('', start - 1, start, 'end');
+        newestInput.dispatchEvent(new Event('input', { bubbles: true }));
+        focusCurrentInput();
+        return;
+    }
+    if (event.key === 'Enter' && newestInput && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        newestInput.closest('.calculation-row').classList.remove('has-placeholder');
+        const nextRow = createRow();
+        newestInput.closest('.calculation-row').after(nextRow);
+        nextRow.querySelector('.calculation-input').focus();
+        updateOutputs();
+        return;
+    }
+    if (event.defaultPrevented || event.key.length !== 1 || event.metaKey || event.ctrlKey || event.altKey) return;
 
     event.preventDefault();
     insertIntoNewestInput(event.key);

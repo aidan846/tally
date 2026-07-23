@@ -25,6 +25,9 @@
       "identifier": "opener:allow-open-url",
       "allow": [
         { "url": "https://github.com/aidan846/tally/*" },
+        { "url": "https://ko-fi.com/aj006" },
+        { "url": "https://buymeacoffee.com/aj06" },
+        { "url": "https://www.paypal.com/donate/*" },
         { "url": "ms-settings:*" },
         { "url": "x-apple.systempreferences:*" }
       ]

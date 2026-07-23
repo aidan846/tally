@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Tally",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "identifier": "com.aidan.tally",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -14,7 +14,7 @@
       {
         "label": "main",
         "title": "Tally",
-        "width": 460,
+        "width": 360,
         "height": 360,
         "minWidth": 360,
         "minHeight": 260,
@@ -27,7 +27,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' customprotocol: asset:; connect-src ipc: http://ipc.localhost https://v6.exchangerate-api.com https://query1.finance.yahoo.com https://geocoding-api.open-meteo.com https://api.open-meteo.com https://api.github.com https://github.com; img-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'"
+      "csp": "default-src 'self' customprotocol: asset:; connect-src ipc: http://ipc.localhost https://v6.exchangerate-api.com https://query1.finance.yahoo.com https://corsproxy.io https://geocoding-api.open-meteo.com https://api.open-meteo.com https://api.github.com https://github.com; img-src 'self' asset: data: blob: https://cdn.simpleicons.org; style-src 'self' 'unsafe-inline'; script-src 'self'"
     }
   },
   "bundle": {
@@ -37,6 +37,20 @@
     "shortDescription": "A smart calculator for daily tasks.",
     "longDescription": "Tally is a fast, natural-language calculator with conversions, dates, percentages, statistics, stocks, and weather.",
     "copyright": "Copyright © 2026 aidan846",
+    "windows": {
+      "wix": {
+        "bannerPath": "windows/wix-banner.bmp",
+        "dialogImagePath": "windows/wix-dialog.bmp"
+      },
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "headerImage": "windows/installer-header.bmp",
+        "uninstallerHeaderImage": "windows/installer-header.bmp",
+        "sidebarImage": "windows/installer-sidebar.bmp",
+        "startMenuFolder": "Tally"
+      }
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

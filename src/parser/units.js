@@ -128,6 +128,30 @@ function parseCompoundUnit(value) {
     };
 }
 
+function parseUnitSequence(value) {
+    const aliases = Object.values(UNIT_FAMILIES)
+        .flatMap(family => Object.values(family.units).flatMap(unit => unit.aliases))
+        .sort((left, right) => right.length - left.length)
+        .map(alias => alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const componentPattern = new RegExp(`([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?)\\s*(${aliases.join('|')})(?![a-z])`, 'gi');
+    const components = [];
+    let cursor = 0;
+    for (const match of value.matchAll(componentPattern)) {
+        if (match.index !== cursor && !/^\s*$/.test(value.slice(cursor, match.index))) return null;
+        const unit = findUnit(match[2]);
+        if (!unit) return null;
+        components.push({ value: Number(match[1]), unit });
+        cursor = match.index + match[0].length;
+    }
+    if (cursor !== value.length || components.length < 2 || components.some(component => !Number.isFinite(component.value))) return null;
+    const familyName = components[0].unit.familyName;
+    if (components.some(component => component.unit.familyName !== familyName || (!component.unit.unit.factor && !component.unit.unit.toBase))) return null;
+    const baseValue = components.reduce((total, component) => total + (component.unit.unit.toBase
+        ? component.unit.unit.toBase(component.value)
+        : component.value * component.unit.unit.factor), 0);
+    return { familyName, baseValue };
+}
+
 export function parseUnitConversion(line, decimalPlaces) {
     line = line
         .replace(/\bsquare\s+(millimeters?|millimetres?)\b/gi, 'mm2')
@@ -155,6 +179,7 @@ export function parseUnitConversion(line, decimalPlaces) {
 
     const value = Number(match[1]);
     const source = findUnit(match[2]);
+    const sourceSequence = parseUnitSequence(`${match[1]} ${match[2]}`);
     const target = findUnit(match[3]);
     const sourceCompound = parseCompoundUnit(match[2]);
     const targetCompound = parseCompoundUnit(match[3]);
@@ -162,6 +187,10 @@ export function parseUnitConversion(line, decimalPlaces) {
         if (JSON.stringify(sourceCompound.dimensions) !== JSON.stringify(targetCompound.dimensions)) return null;
         const converted = value * sourceCompound.factor / targetCompound.factor;
         return `${math.format(converted, { notation: 'fixed', precision: decimalPlaces })} ${targetCompound.symbol}`;
+    }
+    if (sourceSequence && target && sourceSequence.familyName === target.familyName) {
+        const converted = target.unit.fromBase ? target.unit.fromBase(sourceSequence.baseValue) : sourceSequence.baseValue / target.unit.factor;
+        return `${math.format(converted, { notation: 'fixed', precision: decimalPlaces })} ${target.symbol}`;
     }
     if (!Number.isFinite(value) || !source || !target || source.familyName !== target.familyName) return null;
 

@@ -97,7 +97,7 @@ html[data-platform="win32"] .window-controls button {
   background: transparent;
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition: color 120ms ease;
 }
 html[data-platform="win32"] .window-controls button svg {
   width: 10px;
@@ -107,10 +107,6 @@ html[data-platform="win32"] .window-controls button svg {
   stroke-linecap: square;
   stroke-width: 1;
 }
-html[data-platform="win32"] .window-controls button:hover { background: rgba(255,255,255,0.12); }
-html[data-platform="win32"] .window-controls button:active { background: rgba(255,255,255,0.2); }
-html[data-platform="win32"] .window-controls #close-button:hover { background: #c42b1c; color: #fff; }
-html[data-platform="win32"] .window-controls #close-button:active { background: #a92317; color: #fff; }
 
 #settings-page {
   position: fixed;
@@ -134,9 +130,17 @@ html[data-platform="win32"] #settings-page { inset: 32px 0 0; }
 .settings-close { background: transparent; border: 0; color: #aeb7d4; cursor: pointer; font-size: 1.8rem; line-height: 1; padding: 0.1rem 0.4rem; }
 .settings-section { margin: 0 auto; max-width: 620px; padding: 1rem 1.5rem; }
 .settings-section h2 { border-bottom: 1px solid rgba(255,255,255,0.1); color: #aeb7d4; font-size: 0.68rem; letter-spacing: 0.09em; margin: 0 0 0.9rem; padding-bottom: 0.55rem; text-transform: uppercase; }
-.update-setting-row { align-items: center; display: flex; gap: 0.55rem; justify-content: flex-start; min-height: 2rem; }
+.support-section p { color: #cbd5e1; font-size: 0.73rem; line-height: 1.45; margin: 0 0 0.8rem; max-width: 34rem; }
+.support-links { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.support-link { align-items: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; color: #f8fafc; display: inline-flex; font-size: 0.7rem; font-weight: 600; gap: 0.36rem; min-height: 30px; padding: 0.35rem 0.55rem; text-decoration: none; transition: background-color 120ms ease, transform 120ms ease; }
+.support-link:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
+.support-link:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.support-link img { height: 15px; width: 15px; }
+.support-link.coffee { color: #fef3c7; }
+.support-link.paypal { color: #bfdbfe; }
+.update-setting-row { align-items: center; display: flex; font-size: 0.68rem; gap: 0.55rem; justify-content: flex-start; min-height: 2rem; }
 .current-version-label { flex: 0 0 auto; white-space: nowrap; }
-.current-version-link { background: transparent; border: 0; color: #aeb7d4; cursor: pointer; font: inherit; font-size: 0.78rem; padding: 0.25rem 0; text-decoration: underline; text-underline-offset: 3px; }
+.current-version-link { background: transparent; border: 0; color: #aeb7d4; cursor: pointer; font: inherit; padding: 0.25rem 0; text-decoration: underline; text-underline-offset: 3px; }
 .current-version-link:hover { color: #fff; }
 .check-updates-button { background: transparent; border: 0; color: #aeb7d4; cursor: pointer; font: inherit; font-size: 0.68rem; padding: 0.25rem 0; text-decoration: underline; text-underline-offset: 3px; }
 .check-updates-button:hover { color: #fff; }
@@ -151,7 +155,7 @@ html[data-platform="win32"] #settings-page { inset: 32px 0 0; }
 #settings-page select,
 #theme-select,
 #decimals-select,
-#zoom-select {
+#font-size-select {
   appearance: auto;
   background: transparent;
   border: 0;
@@ -174,16 +178,21 @@ body.light #settings-page {
 
 body.light #settings-button:hover { background: rgba(0,0,0,0.12); }
 body.light #settings-button:active { background: rgba(0,0,0,0.18); }
-html[data-platform="win32"] body.light .window-controls button:hover { background: rgba(0,0,0,0.1); }
-html[data-platform="win32"] body.light .window-controls button:active { background: rgba(0,0,0,0.16); }
-html[data-platform="win32"] body.light .window-controls #close-button:hover { background: #c42b1c; color: #fff; }
-html[data-platform="win32"] body.light .window-controls #close-button:active { background: #a92317; color: #fff; }
+html[data-platform="win32"] body.light .window-controls button:hover,
+html[data-platform="win32"] body.light .window-controls button:active { background: transparent; }
+html[data-platform="win32"] body.light .window-controls #close-button:hover,
+html[data-platform="win32"] body.light .window-controls #close-button:active { background: transparent; color: #dc2626; }
 body.light .settings-heading, body.light .settings-shortcut { color: #687086; }
 body.light .version-link { color: #687086; }
 body.light .version-link:hover { color: #1f2937; }
 body.light .settings-shortcut { border-color: rgba(0,0,0,0.08); }
 body.light kbd { background: #eef0f5; border-color: #dfe2ea; color: #252a38; }
 body.light .settings-section h2 { border-color: rgba(0,0,0,0.08); }
+body.light .support-section p { color: #475569; }
+body.light .support-link { background: #fff; border-color: #dbe1ea; color: #334155; }
+body.light .support-link:hover { background: #f8fafc; }
+body.light .support-link.coffee { color: #92400e; }
+body.light .support-link.paypal { color: #075985; }
 body.light .current-version-link { color: #687086; }
 body.light .current-version-link:hover { color: #1f2937; }
 body.light #update-status { color: #687086; }
@@ -194,13 +203,18 @@ body.light .check-updates-button:hover { color: #1f2937; }
   display: none !important;
 }
 
-#settings-page > * { zoom: var(--content-zoom, 1); }
-.container { zoom: var(--content-zoom, 1); }
+html { font-size: calc(16px * var(--content-font-scale, 1)); }
 .container, #settings-page { scrollbar-width: thin; scrollbar-color: #4b5563 transparent; }
-.container::-webkit-scrollbar, #settings-page::-webkit-scrollbar { width: 8px; }
+.container::-webkit-scrollbar, #settings-page::-webkit-scrollbar { height: 3px; width: 3px; }
 .container::-webkit-scrollbar-track, #settings-page::-webkit-scrollbar-track { background: transparent; }
-.container::-webkit-scrollbar-thumb, #settings-page::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
-.container::-webkit-scrollbar-button, #settings-page::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+.container::-webkit-scrollbar-thumb, #settings-page::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 999px; }
+.container::-webkit-scrollbar-button,
+.container::-webkit-scrollbar-button:vertical:decrement,
+.container::-webkit-scrollbar-button:vertical:increment,
+#settings-page::-webkit-scrollbar-button,
+#settings-page::-webkit-scrollbar-button:vertical:decrement,
+#settings-page::-webkit-scrollbar-button:vertical:increment { display: none; height: 0 !important; width: 0 !important; }
+.container::-webkit-scrollbar-corner, #settings-page::-webkit-scrollbar-corner { background: transparent; }
 body.light .container, body.light #settings-page { scrollbar-color: #c4c9d2 transparent; }
 body.light .container::-webkit-scrollbar-thumb, body.light #settings-page::-webkit-scrollbar-thumb { background: #c4c9d2; }
 
@@ -232,6 +246,14 @@ body.light .container::-webkit-scrollbar-thumb, body.light #settings-page::-webk
 #update-notice-open:hover { background: #93c5fd; }
 .update-notice-dismiss { align-self: center; background: transparent; border: 0; color: #94a3b8; cursor: pointer; display: grid; flex: 0 0 28px; font-size: 1.35rem; height: 28px; line-height: 1; margin-left: 2px; padding: 0; place-items: center; width: 28px; }
 .update-notice-dismiss:hover { color: #fff; }
+.support-toast { background: #272a34; border: 1px solid rgba(255,255,255,0.16); border-radius: 9px; bottom: 14px; box-shadow: 0 12px 32px rgba(0,0,0,0.35); color: #f8fafc; display: grid; gap: 0.7rem; max-width: min(340px, calc(100vw - 28px)); padding: 0.8rem 2.5rem 0.8rem 0.9rem; position: fixed; right: 14px; z-index: 1450; }
+.support-toast[hidden] { display: none; }
+.support-toast-copy { display: grid; gap: 0.22rem; }
+.support-toast-copy strong { color: #fef3c7; font-size: 0.8rem; }
+.support-toast-copy span { color: #cbd5e1; font-size: 0.68rem; line-height: 1.35; }
+.support-toast-links .support-link { font-size: 0.64rem; min-height: 28px; padding: 0.28rem 0.42rem; }
+.support-toast-dismiss { background: transparent; border: 0; color: #94a3b8; cursor: pointer; font-size: 1.35rem; line-height: 1; padding: 0.25rem; position: absolute; right: 0.36rem; top: 0.34rem; }
+.support-toast-dismiss:hover { color: #fff; }
 .currency-status { background: rgba(120, 53, 15, 0.92); border: 1px solid rgba(251, 191, 36, 0.35); border-radius: 7px; bottom: 12px; color: #fef3c7; font-size: 0.66rem; left: 12px; padding: 0.45rem 0.6rem; position: fixed; z-index: 1400; }
 body.light .currency-status { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
 
@@ -239,6 +261,10 @@ body.light .update-notice { background: #fff; border-color: #93c5fd; color: #172
 body.light .update-notice-copy strong { color: #1d4ed8; }
 body.light .update-notice-copy span { color: #475569; }
 body.light .update-notice-dismiss { color: #64748b; }
+body.light .support-toast { background: #fff; border-color: #dbe1ea; box-shadow: 0 12px 32px rgba(15,23,42,0.16); }
+body.light .support-toast-copy strong { color: #92400e; }
+body.light .support-toast-copy span { color: #475569; }
+body.light .support-toast-dismiss { color: #64748b; }
 
 /* Fill the browser or installed-PWA window instead of constraining it to the
    desktop app's initial 460 × 360 canvas. */
@@ -271,6 +297,9 @@ body {
 .container {
   width: 100%;
   height: calc(100vh - 32px);
+  box-sizing: border-box;
+  /* Reserve the same inset beneath the scrolling content as at either side. */
+  padding-bottom: 1rem;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -278,12 +307,14 @@ body {
 .calculator {
   width: 100%;
   box-sizing: border-box;
-  padding: 1rem;
+  /* Keep the calculator content inset evenly from the title bar and every edge. */
+  padding: 1rem 1rem 0;
 }
 
 .calculation-row {
   display: grid;
-  grid-template-columns: minmax(0, 58%) minmax(0, 42%);
+  grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 1rem;
   align-items: start;
 }
 
@@ -293,7 +324,7 @@ body {
   color: #fff;
   border: none;
   background: #1e1e1e;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   box-sizing: border-box;
   line-height: 1.5;
 }
@@ -311,6 +342,8 @@ body {
   caret-color: #f7f8ff;
   color: #d7ddea;
   -webkit-text-fill-color: #d7ddea;
+  /* 0.875rem is 14px at the default 100% font size, matching Tally's title. */
+  font-size: 0.875rem;
 }
 
 html.renderer-ready .calculation-input {
@@ -321,7 +354,7 @@ html.renderer-ready .calculation-input {
 .calculation-input::selection { background: #2563eb; color: #fff; -webkit-text-fill-color: #fff; }
 .input-stack { min-width: 0; position: relative; }
 .calculation-highlight,
-.input-placeholder { box-sizing: border-box; font: inherit; font-size: 0.8rem; left: 0; line-height: 1.5; margin: 0; min-height: 1.5rem; pointer-events: none; position: absolute; right: 0; top: 0; z-index: 0; }
+.input-placeholder { box-sizing: border-box; font: inherit; font-size: 0.875rem; left: 0; line-height: 1.5; margin: 0; min-height: 1.5rem; pointer-events: none; position: absolute; right: 0; top: 0; z-index: 0; }
 .calculation-highlight { color: #d7ddea; overflow-wrap: anywhere; white-space: pre-wrap; word-break: break-word; }
 .input-placeholder { color: #9ca8bf; display: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .calculation-row.is-empty.has-placeholder .input-placeholder { display: block; }
