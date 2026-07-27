@@ -13,6 +13,8 @@ import { parseCurrentTimeAndDate, parseTimeZoneConversion } from './parser/timez
 import { parsePercentageOperations } from './parser/percentages.js';
 import { currencyPreference, evaluateCurrencyBinary, formatCurrency } from './parser/currency.js';
 import { parseStatistics } from './parser/statistics.js';
+import { tryParseGeometry } from './parser/geometry.js';
+import { parsePowerShorthand } from './parser/powers.js';
 
 const parser = math.parser();
 let previousResults = [];
@@ -188,6 +190,8 @@ export function evaluateInput(fullInputText, decimalPlaces) {
                         const variableDate = parseDateDurationVariableArithmetic(line, parser) || parseVariableDateArithmetic(line, parser);
                         const percentage = parsePercentageOperations(line, parser, decimalPlaces);
                         const conversion = parseUnitConversion(line, decimalPlaces);
+                        const geometry = conversion === null ? tryParseGeometry(line) : null;
+                        const powerShorthand = conversion === null && geometry === null ? parsePowerShorthand(line, decimalPlaces) : null;
 
                         if (dateOffset instanceof Date) {
                             storedValue = dateOffset;
@@ -207,6 +211,11 @@ export function evaluateInput(fullInputText, decimalPlaces) {
                             result = percentage;
                         } else if (conversion !== null) {
                             result = conversion;
+                        } else if (geometry !== null) {
+                            storedValue = geometry;
+                            result = formatValue(geometry, line, decimalPlaces, variableStyles).replace(/\^([23])\b/g, '$1');
+                        } else if (powerShorthand !== null) {
+                            result = powerShorthand;
                         } else {
                             let processedLine = prepareExpression(line).replace(/\b(?:sci|scientific)\b/g, '').trim();
                             if (previousResults.length > 0 && processedLine.includes('prev')) {

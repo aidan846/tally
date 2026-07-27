@@ -38,7 +38,8 @@ Tally is a clean, fast desktop calculator that understands both traditional expr
 | `06` | **Market snapshots** | Look up stock prices, open/high/low/close values, historical closes, and price differences |
 | `07` | **Variables & history** | Name values, reuse them later, reference `prev`, then total or average the results |
 | `08` | **Quick statistics** | Average, median, midpoint, random numbers, rounding, and common math functions |
-| `09` | **Current weather** | Check named locations in local units, or type `Weather` to use your current location |
+| `09` | **Geometry & volume** | Find volume, area, surface area, and circumference with natural inputs such as `vol cyl r5 h10` |
+| `10` | **Current weather** | Check named locations in local units, or type `Weather` to use your current location |
 
 ## A calculator that keeps up
 
@@ -96,6 +97,11 @@ It’s made for the quick conversions, estimates, comparisons, and tiny decision
 | Time-duration conversion | `2.5 hours to minutes` | `150.0000 min` |
 | Volume conversion | `3 cups to ml` | `709.7640 ml` |
 | Area conversion | `2 acres to m2` | `8093.7128 m2` |
+| Geometry calculations | `vol cylinder r5 h10`, `area circle d5`, `sa sphere r3` | volumes, areas, surface areas, and circumferences for common shapes |
+| Geometry shapes & positional input | `vol cyl 5 10`, `vol pyr 20 9` | Cylinder: `r h`; cone: `r h`; sphere: `r`; pyramid (`pyr`): `b h`; prism: `b h`; cube: `s`; torus: `R r`; circle: `r` |
+| Diameter input | `volume cylinder d10 h20` | uses `d / 2` as the radius for radius-based shapes |
+| Squared/cubed shorthand | `6 squared` / `6 sq`, `6in cubed` / `6in cu`, `6in3` | `36.0000`, `216.0000 in3`, `216.0000 in3` |
+| Inline parameter hints | Type a structured command and a trailing space, such as `vol cyl ` or `midpoint between ` | shows the next expected values without changing your input |
 | Speed conversion | `60 mph to km/h` | `96.5606 km/h` |
 | Pressure conversion | `1 atm to psi` | `14.6959 psi` |
 | Data-size conversion | `5 GB to MB` | `5120.0000 MB` |

@@ -8,6 +8,12 @@ math.createUnit('GBP', { definition: '1.25 USD', aliases: ['gbp'] }, { override:
 math.createUnit('AUD', { definition: '0.6666666667 USD', aliases: ['aud'] }, { override: true });
 math.createUnit('INR', { definition: '0.012 USD', aliases: ['inr'] }, { override: true });
 const { evaluateInput } = await import('../src/parser.js');
+const { getInputHint } = await import('../src/parser/hints.js');
+
+assert.equal(getInputHint('volume cylinder '), 'r h', 'geometry hint');
+assert.equal(getInputHint('volume circle '), '', 'unsupported geometry operation has no hint');
+assert.equal(getInputHint('midpoint between '), 'first and second value', 'structured command hint');
+assert.equal(getInputHint('volume cylinder r'), '', 'geometry hint clears after parameters begin');
 
 const cases = [
     ['5 + 5', '10.0000'],
@@ -50,6 +56,21 @@ const cases = [
     ['1 ft^2 to in2', '144.0000 in2'],
     ['1 ft3 to l', '28.3168 l'],
     ['1 ft^3 to in^3', '1728.0000 in3'],
+    ['volume cylinder r5 h10', '785.3982'],
+    ['volume cyl 5 10', '785.3982'],
+    ['vol cyl 5 10', '785.3982'],
+    ['volume cylinder d10 h10', '785.3982'],
+    ['area circle r5', '78.5398'],
+    ['area circle d5', '19.6350'],
+    ['volume sphere d6', '113.0973'],
+    ['volume pyramid b20 h9', '60.0000'],
+    ['volume pyr 20 9', '60.0000'],
+    ['6 cubed', '216.0000'],
+    ['6 cu', '216.0000'],
+    ['6 sq', '36.0000'],
+    ['6in cubed', '216.0000 in3'],
+    ['6in3', '216.0000 in3'],
+    ['volume cylinder r5in h10in to gal', '3.4000 gal'],
     ['1 square feet to m2', '0.0929 m2'],
     ['1 ft² to m2', '0.0929 m2'],
     ['1 kg/m² to g/m²', '1000.0000 g/m2'],

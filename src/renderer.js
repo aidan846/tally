@@ -4,6 +4,7 @@ import { parseStockExpression } from './stocks/query.js';
 import { parseWeatherQuery } from './weather/query.js';
 import { formatAnswer } from './answer-format.js';
 import { highlightExpression } from './syntax-highlight.js';
+import { getInputHint } from './parser/hints.js';
 
 const calculator = document.getElementById('calculator');
 const PLACEHOLDERS = [
@@ -171,6 +172,14 @@ function renderHighlight(input, resolvedStockQuery = undefined) {
         : resolvedStockQuery;
     const stockSymbols = stockQuery?.operands?.map(operand => operand.symbol) || [];
     input.parentElement.querySelector('.calculation-highlight').innerHTML = highlightExpression(input.value, { stockSymbols });
+    const ghost = input.parentElement.querySelector('.input-ghost');
+    const hint = getInputHint(input.value);
+    ghost.replaceChildren(document.createTextNode(input.value));
+    if (hint) {
+        const hintElement = document.createElement('span');
+        hintElement.textContent = hint;
+        ghost.append(hintElement);
+    }
     input.closest('.calculation-row').classList.toggle('is-empty', input.value.length === 0);
 }
 
@@ -376,6 +385,7 @@ function createRow(value = '', { showPlaceholder = false } = {}) {
     row.innerHTML = `
         <div class="input-stack">
             <pre class="calculation-highlight" aria-hidden="true"></pre>
+            <span class="input-ghost" aria-hidden="true"></span>
             <pre class="input-placeholder" aria-hidden="true"></pre>
             <textarea class="calculation-input" rows="1" aria-label="Calculation"></textarea>
         </div>
