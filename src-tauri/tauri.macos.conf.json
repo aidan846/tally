@@ -1,0 +1,26 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Tally",
+        "width": 360,
+        "height": 360,
+        "minWidth": 360,
+        "minHeight": 260,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "trafficLightPosition": {
+          "x": 12,
+          "y": 14
+        },
+        "hiddenTitle": true,
+        "resizable": true,
+        "center": true,
+        "transparent": false,
+        "shadow": true,
+        "backgroundColor": "#1e1e1e"
+      }
+    ]
+  }
+}
