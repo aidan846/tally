@@ -1,0 +1,5 @@
+Add the ability to type +100, -20, *2, etc, and it will do the operation to the previous line.
+Eg:
+
+10*2*2 = 40
++13 = 53
