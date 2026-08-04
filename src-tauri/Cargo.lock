@@ -3785,7 +3785,7 @@ dependencies = [
 
 [[package]]
 name = "tally"
-version = "2.1.1"
+version = "2.2.1"
 dependencies = [
  "serde",
  "serde_json",
