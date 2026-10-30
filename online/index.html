@@ -4,16 +4,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="tally-version" content="2.1.1" />
+  <meta name="tally-version" content="2.3.0" />
   <title>Tally</title>
-  <link rel="icon" type="image/svg+xml" href="/tally/online/assets/icon-Dv6vPgP6.svg" />
+  <link rel="icon" type="image/svg+xml" href="/tally/online/assets/icon-Dv6vPgP6.svg" />
   <script>
     document.documentElement.dataset.platform = '__TAURI_INTERNALS__' in window
       ? (/Mac/i.test(navigator.userAgent) ? 'darwin' : /Windows/i.test(navigator.userAgent) ? 'win32' : 'linux')
       : 'web';
   </script>
-  <script type="module" crossorigin src="/tally/online/assets/index-Z6QFkff2.js"></script>
-  <link rel="stylesheet" crossorigin href="/tally/online/assets/index-BcU8HAiK.css">
+  <script type="module" crossorigin src="/tally/online/assets/index-CR4Je7tN.js"></script>
+  <link rel="stylesheet" crossorigin href="/tally/online/assets/index-BGWNcd3X.css">
 <link rel="manifest" href="/tally/online/manifest.webmanifest"></head>
 
 <body>
@@ -38,7 +38,7 @@
   <main id="settings-page" hidden aria-labelledby="settings-page-title">
     <div class="settings-page-header">
       <div><h1 id="settings-page-title">Settings</h1></div>
-      <button id="settings-close" class="settings-close" type="button" aria-label="Close settings">×</button>
+      <button id="settings-close" class="settings-close icon-button" type="button" aria-label="Close settings" title="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
     </div>
     <section class="settings-section">
       <h2>Appearance</h2>
@@ -48,6 +48,9 @@
     <label class="setting-row" for="decimals-select"><span>Decimals</span><select id="decimals-select">
       <option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
     </select></label>
+    <label class="setting-row" for="number-format-select"><span>Number format</span><select id="number-format-select">
+      <option value="us">1,234.56</option><option value="eu">1.234,56</option>
+    </select></label>
     <label class="setting-row" for="font-size-select"><span>Font size</span><select id="font-size-select">
       <option value="0.5">50%</option><option value="0.75">75%</option><option value="1" selected>100%</option><option value="1.25">125%</option><option value="1.5">150%</option>
     </select></label>
@@ -55,17 +58,19 @@
     <section class="settings-section"><h2>Shortcuts</h2>
     <div class="settings-shortcut"><kbd>C</kbd><kbd>C</kbd><span>clear all</span></div>
     <div class="settings-shortcut"><kbd>X</kbd><kbd>X</kbd><span>delete row</span></div>
-    <div class="settings-shortcut"><kbd>Ctrl</kbd><kbd>C</kbd><span>copy line</span></div>
+    <div class="settings-shortcut"><kbd data-mod-key>Ctrl</kbd><kbd>C</kbd><span>copy line</span></div>
+    <div class="settings-shortcut"><kbd data-mod-key>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd><span>copy all as summary</span></div>
+    <div class="settings-shortcut"><span class="shortcut-action">Click answer</span><span>use it in the current line</span></div>
+    <div class="settings-shortcut"><span class="shortcut-action">Double-click answer</span><span>copy it</span></div>
     </section>
     <section class="settings-section settings-updates-section"><h2>Updates</h2>
-      <div class="update-setting-row"><button id="check-updates-button" class="check-updates-button" type="button">Check Now</button><span id="update-status" role="status" aria-live="polite"></span><span class="current-version-label">Current</span><button id="version-link" class="current-version-link" type="button" title="View Tally releases">Checking…</button></div>
+      <div class="setting-row update-version-row"><span>Version</span><button id="version-link" class="current-version-link" type="button" title="View Tally releases">Checking…</button></div>
+      <div class="update-setting-row"><button id="check-updates-button" class="check-updates-button" type="button">Check Now</button><span id="update-status" role="status" aria-live="polite"></span></div>
     </section>
     <section class="settings-section support-section"><h2>Support Tally</h2>
-      <p>Enjoying Tally? It's completely free. If you'd like to help keep it going, a donation means a lot.</p>
+      <p>Enjoying Tally? It's completely free. If you'd like to help keep it going, you can sponsor it on GitHub.</p>
       <div class="support-links">
-        <a class="support-link kofi" data-support-link href="https://ko-fi.com/aj006"><img src="https://cdn.simpleicons.org/kofi/FF5E5B" alt="Ko-fi logo"><span>Ko-fi</span></a>
-        <a class="support-link coffee" data-support-link href="https://buymeacoffee.com/aj06"><img src="https://cdn.simpleicons.org/buymeacoffee/FFDD00" alt="Buy Me a Coffee logo"><span>Buy Me a Coffee</span></a>
-        <a class="support-link paypal" data-support-link href="https://www.paypal.com/donate/?business=WK6MSSHYNPCHS"><img src="https://cdn.simpleicons.org/paypal/0070BA" alt="PayPal logo"><span>PayPal</span></a>
+        <a class="support-link sponsor" data-support-link href="https://github.com/aidan846/tally"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 10c0 5.65-7 10-7 10z"/></svg><span>Sponsor on GitHub</span></a>
       </div>
     </section>
   </main>
@@ -76,19 +81,17 @@
       <span id="update-notice-detail"></span>
     </div>
     <button id="update-notice-open" type="button">View release</button>
-    <button id="update-notice-dismiss" class="update-notice-dismiss" type="button" aria-label="Dismiss update notice" title="Dismiss">×</button>
+    <button id="update-notice-dismiss" class="update-notice-dismiss icon-button" type="button" aria-label="Dismiss update notice" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
   </aside>
   <aside id="support-toast" class="support-toast" hidden role="dialog" aria-labelledby="support-toast-title" aria-describedby="support-toast-copy">
     <div class="support-toast-copy">
       <strong id="support-toast-title">Enjoying Tally?</strong>
-      <span id="support-toast-copy">It's completely free. Consider supporting its development with a donation.</span>
+      <span id="support-toast-copy">It's completely free. Consider sponsoring its development on GitHub.</span>
     </div>
     <div class="support-links support-toast-links">
-      <a class="support-link kofi" data-support-link href="https://ko-fi.com/aj006"><img src="https://cdn.simpleicons.org/kofi/FF5E5B" alt=""><span>Ko-fi</span></a>
-      <a class="support-link coffee" data-support-link href="https://buymeacoffee.com/aj06"><img src="https://cdn.simpleicons.org/buymeacoffee/FFDD00" alt=""><span>Buy Me a Coffee</span></a>
-      <a class="support-link paypal" data-support-link href="https://www.paypal.com/donate/?business=WK6MSSHYNPCHS"><img src="https://cdn.simpleicons.org/paypal/0070BA" alt=""><span>PayPal</span></a>
+      <a class="support-link sponsor" data-support-link href="https://github.com/aidan846/tally"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 10c0 5.65-7 10-7 10z"/></svg><span>Sponsor on GitHub</span></a>
     </div>
-    <button id="support-toast-dismiss" class="support-toast-dismiss" type="button" aria-label="Dismiss support message" title="Dismiss">&times;</button>
+    <button id="support-toast-dismiss" class="support-toast-dismiss icon-button" type="button" aria-label="Dismiss support message" title="Dismiss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
   </aside>
   <div id="currency-status" class="currency-status" hidden role="status" aria-live="polite"></div>
 
@@ -105,7 +108,7 @@
       </div>
     </div>
   </div>
-
+
 </body>
 
 </html>
