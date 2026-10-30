@@ -61,14 +61,24 @@ const UNIT_FAMILIES = {
         quadrillion: { factor: 1e15, aliases: ['quadrillion', 'quadrillions', 'quadril', 'quadrils'] },
         quintillion: { factor: 1e18, aliases: ['quintillion', 'quintillions', 'quintil', 'quintils'] }
     } },
+    // Short forms (kb, MB, gb…) mean bytes, since that's what people usually
+    // mean in a calculator. Bits need to be spelled out (kbit, megabit…).
+    // Sizes use the 1024 convention; KiB/MiB/… are accepted as the same units.
     data: { base: 'bit', units: {
-        bit: { factor: 1, aliases: ['bit', 'bits', 'b'] }, B: { factor: 8, aliases: ['B', 'byte', 'bytes'] },
-        kb: { factor: 1024, aliases: ['kb', 'kilobit', 'kilobits'] }, kB: { factor: 8192, aliases: ['kB', 'kilobyte', 'kilobytes'] },
-        mb: { factor: 1048576, aliases: ['mb', 'megabit', 'megabits'] }, MB: { factor: 8388608, aliases: ['MB', 'megabyte', 'megabytes'] },
-        gb: { factor: 1073741824, aliases: ['gb', 'gigabit', 'gigabits'] }, gB: { factor: 8589934592, aliases: ['gB', 'gigabyte', 'gigabytes'] },
-        tb: { factor: 1099511627776, aliases: ['tb', 'terabit', 'terabits'] }, tB: { factor: 8796093022208, aliases: ['tB', 'terabyte', 'terabytes'] }
+        bit: { factor: 1, aliases: ['b', 'bit', 'bits'] }, B: { factor: 8, aliases: ['B', 'byte', 'bytes'] },
+        Kbit: { factor: 1024, aliases: ['kbit', 'kbits', 'kilobit', 'kilobits'] }, KB: { factor: 8192, aliases: ['kb', 'KB', 'kB', 'Kb', 'kib', 'kilobyte', 'kilobytes', 'kibibyte', 'kibibytes'] },
+        Mbit: { factor: 1048576, aliases: ['mbit', 'mbits', 'megabit', 'megabits'] }, MB: { factor: 8388608, aliases: ['mb', 'MB', 'mib', 'megabyte', 'megabytes', 'mebibyte', 'mebibytes'] },
+        Gbit: { factor: 1073741824, aliases: ['gbit', 'gbits', 'gigabit', 'gigabits'] }, GB: { factor: 8589934592, aliases: ['gb', 'GB', 'gib', 'gigabyte', 'gigabytes', 'gibibyte', 'gibibytes'] },
+        Tbit: { factor: 1099511627776, aliases: ['tbit', 'tbits', 'terabit', 'terabits'] }, TB: { factor: 8796093022208, aliases: ['tb', 'TB', 'tib', 'terabyte', 'terabytes', 'tebibyte', 'tebibytes'] },
+        PB: { factor: 9007199254740992, aliases: ['pb', 'PB', 'pib', 'petabyte', 'petabytes'] }
     } }
 };
+
+const DISPLAY_SYMBOLS = { c: '°C', f: '°F', k: 'K' };
+
+function displaySymbol(unit) {
+    return unit.familyName === 'temperature' ? DISPLAY_SYMBOLS[unit.symbol] || unit.symbol : unit.symbol;
+}
 
 function normalizeUnitName(name) {
     return name.toLowerCase().trim().replace(/[.]/g, '').replace(/\b(?:degrees?|deg)\s*/g, 'deg ').replace(/\s+/g, ' ');
@@ -190,12 +200,12 @@ export function parseUnitConversion(line, decimalPlaces) {
     }
     if (sourceSequence && target && sourceSequence.familyName === target.familyName) {
         const converted = target.unit.fromBase ? target.unit.fromBase(sourceSequence.baseValue) : sourceSequence.baseValue / target.unit.factor;
-        return `${math.format(converted, { notation: 'fixed', precision: decimalPlaces })} ${target.symbol}`;
+        return `${math.format(converted, { notation: 'fixed', precision: decimalPlaces })} ${displaySymbol(target)}`;
     }
     if (!Number.isFinite(value) || !source || !target || source.familyName !== target.familyName) return null;
 
     const baseValue = source.unit.toBase ? source.unit.toBase(value) : value * source.unit.factor;
     const converted = target.unit.fromBase ? target.unit.fromBase(baseValue) : baseValue / target.unit.factor;
-    return `${math.format(converted, { notation: 'fixed', precision: decimalPlaces })} ${target.symbol}`;
+    return `${math.format(converted, { notation: 'fixed', precision: decimalPlaces })} ${displaySymbol(target)}`;
 }
 

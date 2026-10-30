@@ -1,4 +1,5 @@
 import { getName, getVersion } from '@tauri-apps/api/app';
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { ask } from '@tauri-apps/plugin-dialog';
@@ -20,11 +21,7 @@ import { isNewerVersion } from './version.js';
 const RELEASES_URL = 'https://github.com/aidan846/tally/releases/latest';
 const RELEASE_API_URL = 'https://api.github.com/repos/aidan846/tally/releases/latest';
 const CORS_PROXY_URL = 'https://corsproxy.io/?url=';
-const SUPPORT_URLS = new Set([
-  'https://ko-fi.com/aj006',
-  'https://buymeacoffee.com/aj06',
-  'https://www.paypal.com/donate/?business=WK6MSSHYNPCHS'
-]);
+const SUPPORT_URLS = new Set(['https://github.com/aidan846/tally']);
 const CONFIG_KEY = 'tally-config';
 const isTauri = '__TAURI_INTERNALS__' in window;
 const platform = /Mac/i.test(navigator.userAgent) ? 'darwin' : /Windows/i.test(navigator.userAgent) ? 'win32' : isTauri ? 'linux' : 'web';
@@ -44,6 +41,20 @@ function readConfig() {
   try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'); } catch { return {}; }
 }
 
+// Ask the native app which CPU it was built for. The web view's user agent
+// can't tell: macOS always reports "Intel", and Windows on ARM reports x64.
+async function appArchitecture() {
+  if (isTauri) {
+    try {
+      const arch = await invoke('app_arch');
+      return { aarch64: 'arm64', x86_64: 'x64', x86: 'x86' }[arch] || 'x64';
+    } catch (error) {
+      console.warn('Could not read app architecture:', error);
+    }
+  }
+  return navigator.userAgent.includes('ARM64') ? 'arm64' : navigator.userAgent.includes('WOW64') ? 'x86' : 'x64';
+}
+
 async function currentVersion() {
   if (isTauri) return getVersion();
   return document.querySelector('meta[name="tally-version"]')?.content || '2.0.0';
@@ -60,11 +71,16 @@ async function checkForUpdates() {
     const release = await response.json();
     const latestVersion = String(release.tag_name || '').replace(/^v/i, '');
     const assets = Array.isArray(release.assets) ? release.assets : [];
-    const architecture = navigator.userAgent.includes('ARM64') ? 'arm64' : navigator.userAgent.includes('WOW64') ? 'x86' : 'x64';
+    const architecture = await appArchitecture();
+    // Release files are named like Tally_2.2.1_aarch64.dmg, Tally_2.2.1_x64.dmg,
+    // Tally_2.2.1_x64-setup.exe and Tally_2.2.1_x86-setup.exe.
+    const archPattern = { arm64: /aarch64|arm64/i, x64: /x64|x86_64|amd64/i, x86: /x86(?!_64)/i }[architecture];
+    const pick = (kind, preferred) => assets.find(item => kind.test(item.name) && preferred?.test(item.name));
     const asset = platform === 'win32'
-      ? assets.find(item => /setup.*\.exe$/i.test(item.name) && new RegExp(architecture, 'i').test(item.name)) || assets.find(item => /setup.*\.exe$/i.test(item.name))
+      // There's no Windows ARM build yet; x64 runs under emulation there.
+      ? pick(/setup.*\.exe$/i, architecture === 'arm64' ? /x64/i : archPattern) || assets.find(item => /setup.*\.exe$/i.test(item.name))
       : platform === 'darwin'
-        ? assets.find(item => /\.dmg$/i.test(item.name))
+        ? pick(/\.dmg$/i, archPattern) || assets.find(item => /\.dmg$/i.test(item.name))
         : assets.find(item => /\.AppImage$/i.test(item.name)) || assets.find(item => /\.deb$/i.test(item.name));
     return {
       currentVersion: current,

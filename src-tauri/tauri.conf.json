@@ -27,7 +27,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' customprotocol: asset:; connect-src ipc: http://ipc.localhost https://v6.exchangerate-api.com https://query1.finance.yahoo.com https://corsproxy.io https://geocoding-api.open-meteo.com https://api.open-meteo.com https://api.github.com https://github.com; img-src 'self' asset: data: blob: https://cdn.simpleicons.org; style-src 'self' 'unsafe-inline'; script-src 'self'"
+      "csp": "default-src 'self' customprotocol: asset:; connect-src ipc: http://ipc.localhost https://v6.exchangerate-api.com https://query1.finance.yahoo.com https://corsproxy.io https://geocoding-api.open-meteo.com https://api.open-meteo.com https://api.github.com https://github.com; img-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'"
     }
   },
   "bundle": {

@@ -142,9 +142,6 @@ html[data-platform="win32"] #settings-page { inset: 32px 0 0; }
 .support-link { align-items: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; color: #f8fafc; display: inline-flex; font-size: 0.7rem; font-weight: 600; gap: 0.36rem; min-height: 30px; padding: 0.35rem 0.55rem; text-decoration: none; transition: background-color 120ms ease, transform 120ms ease; }
 .support-link:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
 .support-link:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
-.support-link img { height: 15px; width: 15px; }
-.support-link.coffee { color: #fef3c7; }
-.support-link.paypal { color: #bfdbfe; }
 .update-setting-row { align-items: center; display: flex; font-size: 0.68rem; gap: 0.55rem; justify-content: flex-start; min-height: 2rem; }
 .current-version-label { flex: 0 0 auto; white-space: nowrap; }
 .current-version-link { background: transparent; border: 0; color: #aeb7d4; cursor: pointer; font: inherit; padding: 0.25rem 0; text-decoration: underline; text-underline-offset: 3px; }
@@ -198,8 +195,6 @@ body.light .settings-section h2 { border-color: rgba(0,0,0,0.08); }
 body.light .support-section p { color: #475569; }
 body.light .support-link { background: #fff; border-color: #dbe1ea; color: #334155; }
 body.light .support-link:hover { background: #f8fafc; }
-body.light .support-link.coffee { color: #92400e; }
-body.light .support-link.paypal { color: #075985; }
 body.light .current-version-link { color: #687086; }
 body.light .current-version-link:hover { color: #1f2937; }
 body.light #update-status { color: #687086; }
@@ -498,3 +493,75 @@ html[data-platform="win32"] .window-controls #close-button:active { background: 
 html[data-platform="win32"] body.light .window-controls #minimize-button:hover { color: #b7791f; }
 html[data-platform="win32"] body.light .window-controls #maximize-button:hover { color: #2f855a; }
 html[data-platform="win32"] body.light .window-controls #close-button:hover { color: #dc2626; }
+
+/* The textarea draws the caret; the highlight/ghost layers draw the visible text.
+   They must use the exact same font, or the caret drifts from the text. macOS
+   WebKit gives textareas a different default monospace font than <pre>, which
+   showed up as the caret landing inside numbers after typing a decimal point. */
+.calculation-input,
+.calculation-highlight,
+.input-placeholder,
+.input-ghost {
+  font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+  font-kerning: none;
+  font-variant-ligatures: none;
+  font-feature-settings: normal;
+  letter-spacing: 0;
+  text-rendering: optimizeSpeed;
+}
+
+/* ---- Settings page refresh ---- */
+
+/* Shared icon-only buttons (settings close, popup dismiss). */
+.icon-button { align-items: center; background: transparent; border: 0; border-radius: 6px; color: #94a3b8; cursor: pointer; display: inline-grid; flex: 0 0 auto; height: 28px; justify-content: center; padding: 0; width: 28px; transition: background-color 120ms ease, color 120ms ease; }
+.icon-button svg { fill: none; height: 16px; stroke: currentColor; stroke-linecap: round; stroke-width: 1.8; width: 16px; }
+.icon-button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.icon-button:focus-visible { outline: 2px solid #93c5fd; outline-offset: 1px; }
+.settings-close.icon-button { font-size: inherit; padding: 0; }
+.support-toast-dismiss.icon-button { font-size: inherit; padding: 0; right: 0.4rem; top: 0.4rem; }
+.update-notice-dismiss.icon-button { font-size: inherit; }
+
+/* Each settings group sits in a soft card. */
+.settings-section { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; box-sizing: border-box; margin: 0 auto 0.75rem; padding: 0.85rem 1.1rem; width: calc(100% - 2rem); }
+.settings-section:last-of-type { margin-bottom: 1.25rem; }
+.settings-section h2 { border-bottom: 0; margin-bottom: 0.6rem; padding-bottom: 0; }
+.settings-section > :last-child { margin-bottom: 0; }
+.settings-section .setting-row:first-of-type { margin-top: 0; }
+.settings-page-header { padding: 0.8rem 1.6rem 0.6rem; }
+.setting-row { margin: 0.6rem 0; }
+.settings-shortcut { margin: 0.55rem 0; }
+.settings-shortcut:first-of-type { margin-top: 0; }
+kbd { display: inline-block; min-width: 1.1em; text-align: center; }
+
+/* Updates: version on its own row, then the action + status. */
+.update-version-row { font-size: 0.82rem; }
+.update-version-row .current-version-link { font-size: 0.75rem; }
+.update-setting-row { min-height: 0; }
+.check-updates-button { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; color: #e2e8f0; font-size: 0.68rem; font-weight: 600; padding: 0.3rem 0.65rem; text-decoration: none; }
+.check-updates-button:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+/* Single GitHub Sponsor button with a bundled heart icon (no network images). */
+.support-link svg { fill: none; height: 15px; stroke: #f472b6; stroke-linejoin: round; stroke-width: 1.9; width: 15px; }
+.support-toast-links { justify-content: flex-start; }
+
+body.light .icon-button { color: #64748b; }
+body.light .icon-button:hover { background: rgba(0,0,0,0.07); color: #0f172a; }
+body.light .settings-section { background: #fff; border-color: rgba(0,0,0,0.08); }
+body.light .check-updates-button { background: #f1f5f9; border-color: #dbe1ea; color: #334155; }
+body.light .check-updates-button:hover { background: #e2e8f0; color: #0f172a; }
+body.light .support-link svg { stroke: #db2777; }
+.shortcut-action { color: #e2e8f0; font-size: 0.66rem; font-weight: 600; }
+body.light .shortcut-action { color: #252a38; }
+
+/* Answers can be clicked to reuse them (double-click copies). */
+.calculation-output .answer-number { cursor: pointer; }
+.calculation-output .answer-number:hover { text-decoration: underline; text-decoration-color: rgba(255,255,255,0.35); text-underline-offset: 3px; }
+body.light .calculation-output .answer-number:hover { text-decoration-color: rgba(0,0,0,0.3); }
+
+/* # headings and // comments */
+/* Color only: changing weight or style here could change character widths
+   and pull the caret out of line with the text again. */
+.token-heading { color: #93c5fd; }
+.token-comment { color: #7c879e; }
+body.light .token-heading { color: #1d4ed8; }
+body.light .token-comment { color: #8a93a6; }

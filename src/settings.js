@@ -1,10 +1,27 @@
+import { setNumberFormat } from './parser.js';
+
 export let decimalPlaces = 2;
+export let numberFormat = 'us';
 const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-const SUPPORT_PROMPT_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+// Show the donation prompt at most once every ~6 months.
+const SUPPORT_PROMPT_INTERVAL_MS = 182 * 24 * 60 * 60 * 1000;
+const SUPPORT_PROMPT_VISIBLE_MS = 5000;
 const SUPPORT_PROMPT_FIRST_LAUNCH = 3;
 
 function openSupportLink(url) {
     window.electronAPI.openExternalUrl(url);
+}
+
+// Show the Mac command key in shortcut hints instead of "Ctrl".
+function initializeShortcutLabels() {
+    if (!/Mac/i.test(navigator.userAgent)) return;
+    document.querySelectorAll('[data-mod-key]').forEach(key => {
+        key.textContent = '⌘';
+        key.title = 'Command';
+    });
+    document.querySelectorAll('.settings-shortcut kbd').forEach(key => {
+        if (key.textContent === 'Shift') { key.textContent = '⇧'; key.title = 'Shift'; }
+    });
 }
 
 function initializeSupportLinks() {
@@ -29,9 +46,20 @@ function scheduleSupportPrompt(config) {
     dismissButton?.addEventListener('click', () => { toast.hidden = true; });
     if (!canShow) return;
 
+    let hideTimer = 0;
+    const hide = () => { window.clearTimeout(hideTimer); toast.hidden = true; };
+    const startHideTimer = () => {
+        window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(hide, SUPPORT_PROMPT_VISIBLE_MS);
+    };
+    // Pause auto-dismiss while the pointer is over the toast so links stay clickable.
+    toast.addEventListener('mouseenter', () => window.clearTimeout(hideTimer));
+    toast.addEventListener('mouseleave', () => { if (!toast.hidden) startHideTimer(); });
+
     window.setTimeout(() => {
         toast.hidden = false;
         window.electronAPI.setConfig({ lastSupportPromptAt: Date.now() });
+        startHideTimer();
     }, 1000);
 }
 
@@ -65,10 +93,12 @@ function applyTheme(theme) {
 export async function initializeSettings() {
     const config = await window.electronAPI.getConfig();
     initializeSupportLinks();
+    initializeShortcutLabels();
     scheduleSupportPrompt(config);
     const themeSelect = document.getElementById('theme-select');
     const decimalsSelect = document.getElementById('decimals-select');
     const fontSizeSelect = document.getElementById('font-size-select');
+    const numberFormatSelect = document.getElementById('number-format-select');
     const settingsPage = document.getElementById('settings-page');
     const settingsClose = document.getElementById('settings-close');
     const checkUpdatesButton = document.getElementById('check-updates-button');
@@ -90,6 +120,17 @@ export async function initializeSettings() {
         decimalPlaces = config.decimals;
         decimalsSelect.value = config.decimals.toString();
     }
+
+    const initialNumberFormat = config.numberFormat === 'eu' ? 'eu' : 'us';
+    numberFormatSelect.value = initialNumberFormat;
+    numberFormat = initialNumberFormat;
+    setNumberFormat(initialNumberFormat);
+    numberFormatSelect.addEventListener('change', async (e) => {
+        numberFormat = e.target.value === 'eu' ? 'eu' : 'us';
+        setNumberFormat(numberFormat);
+        document.dispatchEvent(new Event('tally:settings-changed'));
+        await window.electronAPI.setConfig({ numberFormat });
+    });
 
     themeSelect.addEventListener('change', async (e) => {
         const theme = e.target.value;

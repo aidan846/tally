@@ -8,12 +8,12 @@ export function formatAnswer(answer) {
         return '<span class="answer-error-icon" title="Could not evaluate this calculation" aria-label="Could not evaluate this calculation"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M9 9l6 6m0-6l-6 6"/></svg></span>';
     }
 
-    const currency = text.match(/^(NZ\$|HK\$|A\$|C\$|S\$|R\$|[$€£¥₹₩₽₺₫฿₱₦])([+-]?(?:\d[\d,]*(?:\.\d+)?|\.\d+))$/);
+    const currency = text.match(/^(NZ\$|HK\$|A\$|C\$|S\$|R\$|[$€£¥₹₩₽₺₫฿₱₦])([+-]?(?:\d[\d,.]*|\.\d+))$/);
     if (currency) {
         return `<span class="answer-number">${escapeHtml(currency[1])}${escapeHtml(currency[2])}</span>`;
     }
 
-    const valueWithUnit = text.match(/^([+-]?(?:\d[\d,]*(?:\.\d+)?(?:e[+-]?\d+)?|\.\d+)(?:%|°)?)(\s+)(.+)$/i);
+    const valueWithUnit = text.match(/^([+-]?(?:\d[\d,.]*(?:e[+-]?\d+)?|\.\d+)(?:%|°)?)(\s+)(.+)$/i);
     if (valueWithUnit) {
         return `<span class="answer-number">${escapeHtml(valueWithUnit[1])}</span>${escapeHtml(valueWithUnit[2])}<span class="answer-unit">${escapeHtml(valueWithUnit[3])}</span>`;
     }

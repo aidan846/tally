@@ -1,4 +1,4 @@
-import { initializeSettings, initializeWindowControls, decimalPlaces } from './settings.js';
+import { initializeSettings, initializeWindowControls, decimalPlaces, numberFormat } from './settings.js';
 import { evaluateInput } from './parser.js';
 import { parseStockExpression } from './stocks/query.js';
 import { parseWeatherQuery } from './weather/query.js';
@@ -57,6 +57,13 @@ async function checkForUpdates() {
         }
     };
     dismissButton.onclick = hideUpdateNotice;
+    // Pause auto-dismiss while hovered so the update button stays clickable.
+    notice.onmouseenter = () => window.clearTimeout(updateNoticeTimer);
+    notice.onmouseleave = () => {
+        if (notice.hidden) return;
+        window.clearTimeout(updateNoticeTimer);
+        updateNoticeTimer = window.setTimeout(hideUpdateNotice, 5000);
+    };
     notice.hidden = false;
     window.clearTimeout(updateNoticeTimer);
     updateNoticeTimer = window.setTimeout(hideUpdateNotice, 5000);
@@ -193,7 +200,9 @@ function setPlaceholder(input) {
     input.closest('.calculation-row').classList.add('has-placeholder');
 }
 
-function showCopyToast(message = 'Copied to clipboard') {
+const isMac = /Mac/i.test(navigator.userAgent);
+
+function showCopyToast(message = 'Copied to clipboard', duration = 1600) {
     let toast = document.getElementById('copy-toast');
     if (!toast) {
         toast = document.createElement('div');
@@ -206,7 +215,8 @@ function showCopyToast(message = 'Copied to clipboard') {
     toast.classList.remove('visible');
     void toast.offsetWidth;
     toast.classList.add('visible');
-    window.setTimeout(() => toast.classList.remove('visible'), 1600);
+    window.clearTimeout(toast.hideTimer);
+    toast.hideTimer = window.setTimeout(() => toast.classList.remove('visible'), duration);
 }
 
 async function copyToClipboard(value) {
@@ -217,23 +227,101 @@ async function copyToClipboard(value) {
     await navigator.clipboard.writeText(value);
 }
 
+// Single-click an answer to use it in the current line; double-click copies it.
+const ANSWER_CLICK_DELAY_MS = 300;
+let lastAnswerInsert = null;
+
+function useAnswer(output, value) {
+    const row = output.closest('.calculation-row');
+    const newestRow = calculator.querySelector('.calculation-row:last-child');
+    let input = newestRow.querySelector('.calculation-input');
+    let createdRow = null;
+    // Clicking the current line's own answer starts a new line with it.
+    if (row === newestRow && input.value.trim()) {
+        newestRow.classList.remove('has-placeholder');
+        createdRow = createRow();
+        newestRow.after(createdRow);
+        input = createdRow.querySelector('.calculation-input');
+    }
+    input.focus();
+    const start = input.selectionStart ?? input.value.length;
+    const before = input.value.slice(0, start);
+    const text = `${before && !/[\s(+\-*/^×÷=:]$/.test(before) ? ' ' : ''}${value}`;
+    input.setRangeText(text, start, input.selectionEnd ?? start, 'end');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    lastAnswerInsert = { output, input, start, text, createdRow, at: Date.now() };
+}
+
+// If a slow double-click already inserted the answer, take it back out.
+// Only an insert made by the first click of this same double-click counts.
+function undoRecentAnswerInsert(output, firstClickAt) {
+    const insert = lastAnswerInsert;
+    if (!insert || insert.output !== output || insert.at < firstClickAt) return;
+    lastAnswerInsert = null;
+    const { input, start, text, createdRow } = insert;
+    if (input.value.slice(start, start + text.length) !== text) return;
+    if (createdRow && input.value === text) {
+        deleteRow(createdRow, { preferPrevious: true });
+        return;
+    }
+    input.setRangeText('', start, start + text.length, 'end');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 function attachCopyHandler(output) {
+    let clickTimer = 0;
+    let firstClickAt = 0;
     output.addEventListener('click', async event => {
-        if (event.detail !== 2) return;
         const value = output.textContent.trim();
         if (!value) return;
 
-        event.preventDefault();
-        try {
-            await copyToClipboard(value);
-            showCopyToast('Answer copied');
-        } catch (error) {
-            console.error('Could not copy result:', error);
+        if (event.detail >= 2) {
+            window.clearTimeout(clickTimer);
+            clickTimer = 0;
+            if (event.detail !== 2) return;
+            event.preventDefault();
+            undoRecentAnswerInsert(output, firstClickAt);
+            try {
+                await copyToClipboard(value);
+                showCopyToast('Answer copied');
+            } catch (error) {
+                console.error('Could not copy result:', error);
+            }
+            return;
         }
+
+        // Only numbers, amounts, dates… are worth inserting (not "…" or errors).
+        firstClickAt = Date.now();
+        if (!/\d/.test(value)) return;
+        window.clearTimeout(clickTimer);
+        clickTimer = window.setTimeout(() => {
+            clickTimer = 0;
+            useAnswer(output, value);
+        }, ANSWER_CLICK_DELAY_MS);
     });
 }
 
+// Copy the whole sheet as "line = answer" text.
+function buildSummary() {
+    const lines = [...calculator.querySelectorAll('.calculation-row')].map(row => {
+        const input = row.querySelector('.calculation-input').value.trim();
+        const answer = row.querySelector('.calculation-output').textContent.trim();
+        if (!input) return '';
+        if (!answer || /^\s*(?:#|\/\/)/.test(input)) return input;
+        const assignment = input.match(/^([a-zA-Z_][a-zA-Z0-9_ ]*?)\s*[:=]/);
+        return assignment ? `${assignment[1]} = ${answer}` : `${input} = ${answer}`;
+    });
+    return lines.join('\n').replace(/^\n+|\n+$/g, '').replace(/\n{3,}/g, '\n\n');
+}
+
+// In 1.234,56 mode, swap the separators in displayed numbers.
+function displayNumbers(text) {
+    if (numberFormat !== 'eu') return text;
+    return text.replace(/\d+(?:,\d{3})*(?:\.\d+)?/g, number => number.replace(/[.,]/g, mark => (mark === '.' ? ',' : '.')));
+}
+
 function setOutput(output, answer) {
+    answer = answer === '❌' ? answer : displayNumbers(String(answer ?? ''));
     output.innerHTML = formatAnswer(answer);
     output.setAttribute('aria-label', answer === '❌' ? 'Could not evaluate this calculation' : String(answer || ''));
 }
@@ -337,7 +425,10 @@ function startAsyncQuery(input, output, query, kind) {
 
 function updateOutputs(changedInput = null) {
     const inputs = [...calculator.querySelectorAll('.calculation-input')];
-    if (changedInput && inputs.includes(changedInput) && !inputs.some(input => /^\s*[a-zA-Z_][a-zA-Z0-9_ ]*\s*[:=]/.test(input.value))) {
+    // Re-evaluating just the edited line is faster, but variables, totals,
+    // `prev` and lines starting with an operator (+13) depend on other lines.
+    const dependsOnOtherLines = input => /^\s*[a-zA-Z_][a-zA-Z0-9_ ]*\s*[:=]|^\s*[+\-*/×÷^]|^\s*(?:sum|total|average|avg|mean)\s*:?\s*$|\bprev\b/i.test(input.value);
+    if (changedInput && inputs.includes(changedInput) && !inputs.some(dependsOnOtherLines)) {
         const output = changedInput.closest('.calculation-row').querySelector('.calculation-output');
         const weatherQuery = parseWeatherQuery(changedInput.value);
         const stockQuery = weatherQuery ? null : parseStockExpression(changedInput.value, new Date(), new Set());
@@ -445,10 +536,26 @@ function initializeCalculator() {
     document.documentElement.classList.add('renderer-ready');
 }
 
+let clearedSheet = null;
+
 function clearCalculator() {
+    const values = [...calculator.querySelectorAll('.calculation-input')].map(input => input.value);
+    clearedSheet = values.some(value => value.trim()) ? values : null;
     calculator.replaceChildren(createRow('', { showPlaceholder: true }));
     calculator.querySelector('.calculation-input').focus();
     updateOutputs();
+    if (clearedSheet) showCopyToast(`Cleared · ${isMac ? '⌘' : 'Ctrl+'}Z to undo`, 3000);
+}
+
+// Bring back a sheet cleared with "cc", as long as nothing new was typed.
+function restoreClearedSheet() {
+    const inputs = calculator.querySelectorAll('.calculation-input');
+    if (!clearedSheet || inputs.length !== 1 || inputs[0].value) return false;
+    calculator.replaceChildren(...clearedSheet.map(value => createRow(value)));
+    clearedSheet = null;
+    focusCurrentInput();
+    updateOutputs();
+    return true;
 }
 
 function deleteRow(row, { preferPrevious = false } = {}) {
@@ -530,6 +637,26 @@ const SHORTCUT_SEQUENCE_MS = 350;
 let lastClearKeyAt = 0;
 let lastDeleteKeyAt = 0;
 
+// "cc" / "xx" only count when they can't be part of what's being typed:
+// not inside a word ("account", "Exxon") and, for cc, not right after a
+// number ("5 cc" is cubic centimetres).
+function canStartShortcut(key) {
+    const input = document.activeElement?.classList?.contains('calculation-input') ? document.activeElement : null;
+    if (!input) return true;
+    const before = input.value.slice(0, input.selectionStart);
+    if (/[a-z]$/i.test(before)) return false;
+    if (key === 'c' && /\d\s*$/.test(before)) return false;
+    return true;
+}
+
+// Remove the first "c" that was typed before the shortcut was recognised.
+function removeShortcutKey(key) {
+    const input = document.activeElement?.classList?.contains('calculation-input') ? document.activeElement : null;
+    if (!input) return;
+    const cursor = input.selectionStart;
+    if (cursor > 0 && input.value[cursor - 1].toLowerCase() === key) input.setRangeText('', cursor - 1, cursor, 'end');
+}
+
 window.addEventListener('keydown', event => {
     if (event.repeat) return;
 
@@ -544,12 +671,13 @@ window.addEventListener('keydown', event => {
 
     if (key === 'c') {
         lastDeleteKeyAt = 0;
-        if (now - lastClearKeyAt <= SHORTCUT_SEQUENCE_MS) {
+        if (lastClearKeyAt && now - lastClearKeyAt <= SHORTCUT_SEQUENCE_MS) {
             event.preventDefault();
             lastClearKeyAt = 0;
+            removeShortcutKey('c');
             clearCalculator();
         } else {
-            lastClearKeyAt = now;
+            lastClearKeyAt = canStartShortcut('c') ? now : 0;
         }
         return;
     }
@@ -567,12 +695,12 @@ window.addEventListener('keydown', event => {
             return;
         }
 
-        if (now - lastDeleteKeyAt <= SHORTCUT_SEQUENCE_MS) {
+        if (lastDeleteKeyAt && now - lastDeleteKeyAt <= SHORTCUT_SEQUENCE_MS) {
             event.preventDefault();
             lastDeleteKeyAt = 0;
             deleteRow(activeInput.closest('.calculation-row'));
         } else {
-            lastDeleteKeyAt = now;
+            lastDeleteKeyAt = canStartShortcut('x') ? now : 0;
         }
         return;
     }
@@ -581,9 +709,27 @@ window.addEventListener('keydown', event => {
     lastDeleteKeyAt = 0;
 });
 
+document.addEventListener('keydown', event => {
+    if (event.key.toLowerCase() !== 'z' || (!event.ctrlKey && !event.metaKey) || event.shiftKey || event.altKey) return;
+    if (restoreClearedSheet()) event.preventDefault();
+});
+
 document.addEventListener('keydown', async event => {
     if (event.key.toLowerCase() !== 'c' || (!event.ctrlKey && !event.metaKey)) return;
     if (!document.getElementById('settings-page').hidden) return;
+
+    if (event.shiftKey) {
+        event.preventDefault();
+        const summary = buildSummary();
+        if (!summary) return;
+        try {
+            await copyToClipboard(summary);
+            showCopyToast('Summary copied');
+        } catch (error) {
+            console.error('Could not copy summary:', error);
+        }
+        return;
+    }
 
     const activeInput = document.activeElement?.classList?.contains('calculation-input') && document.activeElement;
     if (activeInput && activeInput.selectionStart !== activeInput.selectionEnd) return;

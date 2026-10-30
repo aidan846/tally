@@ -36,10 +36,10 @@ const cases = [
     ['(15% of 240) + 18', '54.0000'],
     ['sin(pi / 2)', '1.0000'],
     ['1200000 scientific', '1.2000e+6'],
-    ['6 F to C', '-14.4444 c'],
-    ['6 deg f to c', '-14.4444 c'],
-    ['6F to C', '-14.4444 c'],
-    ['5K to F', '-450.6700 f'],
+    ['6 F to C', '-14.4444 °C'],
+    ['6 deg f to c', '-14.4444 °C'],
+    ['6F to C', '-14.4444 °C'],
+    ['5K to F', '-450.6700 °F'],
     ['5ft to cm', '152.4000 cm'],
     ['5 ft in cm', '152.4000 cm'],
     ['1m 20cm to ft', '3.9370 ft'],
@@ -75,7 +75,7 @@ const cases = [
     ['1 ft² to m2', '0.0929 m2'],
     ['1 kg/m² to g/m²', '1000.0000 g/m2'],
     ['60mph to km/h', '96.5606 km/h'],
-    ['1MB to kb', '8192.0000 kb'],
+    ['1MB to kb', '1024.0000 KB'],
     ['20 usd to eur', '16.67 EUR'],
     ['14.7psi to atm', '1.0003 atm'],
     ['1 atmosphere to kPa', '101.3250 kpa'],
@@ -144,9 +144,18 @@ for (const [input, expected] of requestedCases) {
 }
 
 assert.match(evaluateInput('now + 20 minutes', 2)[0], /^\d{1,2}:\d{2}\s(?:am|pm)$/);
-assert.equal(evaluateInput('3:30 am NY to Hamburg', 2)[0], '9:30 am');
-assert.equal(evaluateInput('3:30 New York to Hamburg', 2)[0], '9:30 am');
-assert.equal(evaluateInput('14:20 New York to Beijing', 2)[0], '2:20 am');
+// The NY/Hamburg gap is 6 hours most of the year but 5 during the weeks when
+// only one side has switched daylight saving time, so derive it from today.
+const offsetHours = zone => {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'longOffset' }).formatToParts(new Date());
+    const match = parts.find(part => part.type === 'timeZoneName').value.match(/GMT([+-]\d{2}):?(\d{2})?/);
+    return match ? Number(match[1]) + Math.sign(Number(match[1])) * Number(match[2] || 0) / 60 : 0;
+};
+const hamburgHour = 3 + offsetHours('Europe/Berlin') - offsetHours('America/New_York');
+const hamburgTime = `${hamburgHour > 12 ? hamburgHour - 12 : hamburgHour}:30 ${hamburgHour >= 12 ? 'pm' : 'am'}`;
+assert.equal(evaluateInput('3:30 am NY to Hamburg', 2)[0], hamburgTime);
+assert.equal(evaluateInput('3:30 New York to Hamburg', 2)[0], hamburgTime);
+assert.match(evaluateInput('14:20 New York to Beijing', 2)[0], /^[12]:20 am$/);
 assert.match(evaluateInput('time + 1', 2)[0], /^\d{2}:\d{2} (AM|PM)$/);
 assert.match(evaluateInput('time - 1 hour', 2)[0], /^\d{2}:\d{2} (AM|PM)$/);
 assert.match(evaluateInput('week', 2)[0], /^[A-Z][a-z]+ \d{1,2} - (?:[A-Z][a-z]+ )?\d{1,2}$/);

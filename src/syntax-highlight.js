@@ -1,6 +1,17 @@
 import { escapeHtml } from './answer-format.js';
 
-export function highlightExpression(value, { stockSymbols = [] } = {}) {
+export function highlightExpression(value, options = {}) {
+    if (/^\s*#/.test(value)) return `<span class="token-heading">${escapeHtml(value)}</span>`;
+    if (/^\s*\/\//.test(value)) return `<span class="token-comment">${escapeHtml(value)}</span>`;
+    const comment = value.match(/\s+\/\/.*$/);
+    if (comment) {
+        return highlightCode(value.slice(0, comment.index), options)
+            + `<span class="token-comment">${escapeHtml(comment[0])}</span>`;
+    }
+    return highlightCode(value, options);
+}
+
+function highlightCode(value, { stockSymbols = [] } = {}) {
     const tokenPattern = /(?:\d+(?:\.\d+)?|\.\d+)|(?<![a-z])(?:km\/h|m\/s|nmi|mm|cm|dm|km|ft|yd|mi|mg|kg|lb|lbs|oz|psi|atm|kpa|hpa|mpa|mph|kph|mps|ml|gal|liters?|grams?|meters?|feet|miles?|pounds?|celsius|fahrenheit|kelvin|weeks?|days?|hours?|minutes?|seconds?|teaspoons?|tablespoons?|cups?|euros?|euro|eur|gbp|usd|jpy|ago|[cfkgm])\b|\u00b0[cfk]\b|\b(?:and|or|not|minus|plus|add|times|to|in|into|as|from|before|after|with|without|subtract|divide|multiplied|by|xor|mod|sum|total|product|quotient|difference|average|avg|mean|median|mode|of)\b|[+\-*/%=]|\b[a-z_][a-z0-9_ ]*(?=\s*[:=])/gi;
     const compactUnitPattern = /(?<![a-z])(?:mm|cm|dm|km|ft|in|yd|mi|mg|kg|lb|oz|ml|gal|[cfkgm])(?:2|3|\u00b2|\u00b3)(?!\w)/gi;
     const overlaps = (match, candidates) => candidates.some(candidate => match.index < candidate.index + candidate[0].length && candidate.index < match.index + match[0].length);

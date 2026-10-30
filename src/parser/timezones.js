@@ -163,11 +163,14 @@ export function parseCurrentTimeAndDate(line) {
 }
 
 export function parseTimeZoneConversion(line) {
-    const match = line.trim().match(/^(\d{1,2}:\d{2})(?:\s*(am|pm))?\s+(.+?)\s+(?:to|in)\s+(.+)$/i);
+    // "3:30 am NY to Hamburg", "14:20 New York to Beijing", or "3pm in Tokyo"
+    // (no source zone means the computer's local time).
+    const match = line.trim().match(/^(\d{1,2})(?::(\d{2}))?(?:\s*(am|pm))?\s+(?:(.+?)\s+)?(?:to|in)\s+(.+)$/i);
 
-    if (!match) return null;
+    if (!match || (!match[2] && !match[3])) return null;
 
-    const [, timeText, meridiem, sourceName, targetName] = match;
+    const [, hourText, minuteText = '00', meridiem, sourceName = '', targetName] = match;
+    const timeText = `${hourText}:${minuteText}`;
     const sourceTimeZone = TIMEZONE_MAP[sourceName.toLowerCase().trim()];
     const targetTimeZone = TIMEZONE_MAP[targetName.toLowerCase().trim()];
     if (!sourceTimeZone || !targetTimeZone) return null;

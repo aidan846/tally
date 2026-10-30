@@ -1,4 +1,5 @@
 import { preprocessNaturalLanguage } from './preprocess.js';
+import { formatCurrency } from './currency.js';
 
 export function parsePercentageOperations(line, parser, decimalPlaces) {
     const lowerLine = line.toLowerCase().trim();
@@ -157,7 +158,7 @@ export function parsePercentageOperations(line, parser, decimalPlaces) {
     }
 
     if (resultValue !== null && (typeof resultValue === 'number' || resultValue instanceof math.Unit)) {
-        return math.format(resultValue, { notation: 'fixed', precision: decimalPlaces });
+        return formatCurrency(resultValue, line) ?? math.format(resultValue, { notation: 'fixed', precision: decimalPlaces });
     }
 
     return null;

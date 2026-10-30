@@ -29,9 +29,99 @@ function parseDateLiteral(value, { allowNumeric = true, allowPartialNumeric = fa
     return date.getMonth() !== month || date.getDate() !== day ? null : date;
 }
 
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+function weekdayIndex(name) {
+    const lower = name.toLowerCase();
+    return WEEKDAYS.findIndex(day => day === lower || day.slice(0, 3) === lower || (lower.length >= 3 && day.startsWith(lower)));
+}
+
+// today / tomorrow / yesterday, plus "next friday", "last monday", "this sat".
+export function parseRelativeDay(value, now = new Date()) {
+    const text = value.trim().toLowerCase();
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    if (/^(today|now|date)$/.test(text)) return new Date(now);
+    if (text === 'tomorrow') { base.setDate(base.getDate() + 1); return base; }
+    if (text === 'yesterday') { base.setDate(base.getDate() - 1); return base; }
+    const match = text.match(/^(next|last|this|coming|on)\s+([a-z]+)$/);
+    if (!match) return null;
+    const target = weekdayIndex(match[2]);
+    // Bare weekday names stay free for variables; require next/last/this.
+    if (target < 0 || !match[1]) return null;
+    const today = base.getDay();
+    let offset;
+    if (match[1] === 'last') offset = -(((today - target + 7) % 7) || 7);
+    else if (match[1] === 'this') offset = (target - today + 7) % 7;
+    else offset = ((target - today + 7) % 7) || 7;
+    base.setDate(base.getDate() + offset);
+    return base;
+}
+
+function nthWeekday(year, month, weekday, n) {
+    const date = new Date(year, month, 1, 12);
+    date.setDate(1 + ((weekday - date.getDay() + 7) % 7) + (n - 1) * 7);
+    return date;
+}
+
+function easter(year) {
+    const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+    const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month, day, 12);
+}
+
+const HOLIDAYS = [
+    [/^christmas eve$/, year => new Date(year, 11, 24, 12)],
+    [/^(?:christmas|xmas)(?: day)?$/, year => new Date(year, 11, 25, 12)],
+    [/^new years? eve$|^new year's eve$/, year => new Date(year, 11, 31, 12)],
+    [/^new years?(?: day)?$|^new year's(?: day)?$/, year => new Date(year, 0, 1, 12)],
+    [/^halloween$/, year => new Date(year, 9, 31, 12)],
+    [/^valentine'?s?(?: day)?$/, year => new Date(year, 1, 14, 12)],
+    [/^(?:independence day|july 4th|4th of july|fourth of july)$/, year => new Date(year, 6, 4, 12)],
+    [/^thanksgiving$/, year => nthWeekday(year, 10, 4, 4)],
+    [/^easter(?: sunday)?$/, year => easter(year)]
+];
+
+function parseHoliday(value, now) {
+    const text = value.trim().toLowerCase().replace(/’/g, "'");
+    const holiday = HOLIDAYS.find(([pattern]) => pattern.test(text));
+    if (!holiday) return null;
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    let date = holiday[1](now.getFullYear());
+    if (date < today) date = holiday[1](now.getFullYear() + 1);
+    return date;
+}
+
+// "days until christmas", "days until dec 25", "weeks until friday", "days since jan 1".
+export function parseDaysUntil(line, now = new Date()) {
+    const match = line.trim().match(/^(days|weeks)\s+(until|till|til|to|before|since|from)\s+(.+)$/i);
+    if (!match) return null;
+    const [, unit, direction, target] = match;
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    const counting = /since|from/i.test(direction) ? 'since' : 'until';
+    let date = parseHoliday(target, now) || parseRelativeDay(target, now)
+        || parseDateLiteral(target, { allowNumeric: true, allowPartialNumeric: true, now });
+    if (!date) return null;
+    const hasYear = /\b\d{4}\b|\/\d{2,4}$|-\d{2,4}$/.test(target);
+    if (!hasYear && counting === 'until' && date < today) date = new Date(date.getFullYear() + 1, date.getMonth(), date.getDate(), 12);
+    if (!hasYear && counting === 'since' && date > today) date = new Date(date.getFullYear() - 1, date.getMonth(), date.getDate(), 12);
+    const days = Math.round(Math.abs(date - today) / 86400000);
+    if (unit.toLowerCase() === 'weeks') {
+        const weeks = Math.round(days / 7 * 10) / 10;
+        return `${weeks} week${weeks === 1 ? '' : 's'}`;
+    }
+    return `${days} day${days === 1 ? '' : 's'}`;
+}
+
 export function parseStandaloneDate(line, { allowNumeric = false, now = new Date() } = {}) {
     const trimmedLine = line.trim();
-    if (/^(today|now|date)$/i.test(trimmedLine)) return new Date(now);
+    const relative = parseRelativeDay(trimmedLine, now);
+    if (relative) return relative;
+    const holiday = parseHoliday(trimmedLine, now);
+    if (holiday) return holiday;
     return parseDateLiteral(trimmedLine, { allowNumeric, now });
 }
 
@@ -61,7 +151,7 @@ export function parseDateMath(line) {
 }
 
 export function parseDateOffset(line) {
-    const datePattern = '(?:today|now|date|\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?|(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\s+\\d{1,2}(?:,?\\s+\\d{2,4})?)';
+    const datePattern = '(?:today|now|date|tomorrow|yesterday|(?:next|last|this)\\s+[a-z]+|\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?|(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\s+\\d{1,2}(?:,?\\s+\\d{2,4})?)';
     const unitPattern = '(?:minutes?|mins?|min|hours?|hrs?|hr|days?|d|weeks?|wks?|wk|months?|mos?|mo|years?|yrs?|yr)';
     const trimmedLine = line.trim();
     const agoMatch = trimmedLine.match(new RegExp(`^(\\d+)\\s*(${unitPattern})\\s+ago$`, 'i'));
@@ -69,7 +159,7 @@ export function parseDateOffset(line) {
 
     const baseDate = agoMatch
         ? new Date()
-        : offsetMatch && (/^(today|now|date)$/i.test(offsetMatch[1]) ? new Date() : parseDateLiteral(offsetMatch[1], { allowPartialNumeric: true }));
+        : offsetMatch && (parseRelativeDay(offsetMatch[1]) || parseDateLiteral(offsetMatch[1], { allowPartialNumeric: true }));
     if (!baseDate || Number.isNaN(baseDate.getTime())) return null;
 
     const result = new Date(baseDate.getTime());
