@@ -565,3 +565,9 @@ body.light .calculation-output .answer-number:hover { text-decoration-color: rgb
 .token-comment { color: #7c879e; }
 body.light .token-heading { color: #1d4ed8; }
 body.light .token-comment { color: #8a93a6; }
+
+/* Keep the Settings title and close button pinned while the page scrolls. */
+.settings-page-header { background: #1e1e1e; position: sticky; top: 0; z-index: 2; }
+.settings-page-header::after { background: linear-gradient(#1e1e1e, rgba(30,30,30,0)); content: ""; height: 10px; left: 0; pointer-events: none; position: absolute; right: 0; top: 100%; }
+body.light .settings-page-header { background: #f7f7f7; }
+body.light .settings-page-header::after { background: linear-gradient(#f7f7f7, rgba(247,247,247,0)); }

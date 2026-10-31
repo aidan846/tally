@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Shown by macOS when weather is requested without naming a city. -->
+  <key>NSLocationUsageDescription</key>
+  <string>Tally uses your location only when you ask for the weather without naming a city.</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>Tally uses your location only when you ask for the weather without naming a city.</string>
+</dict>
+</plist>

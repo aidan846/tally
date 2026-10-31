@@ -637,17 +637,11 @@ const SHORTCUT_SEQUENCE_MS = 350;
 let lastClearKeyAt = 0;
 let lastDeleteKeyAt = 0;
 
-// "cc" / "xx" only count when they can't be part of what's being typed:
-// not inside a word ("account", "Exxon") and, for cc, not right after a
-// number ("5 cc" is cubic centimetres).
-function canStartShortcut(key) {
-    const input = document.activeElement?.classList?.contains('calculation-input') ? document.activeElement : null;
-    if (!input) return true;
-    const before = input.value.slice(0, input.selectionStart);
-    if (/[a-z]$/i.test(before)) return false;
-    if (key === 'c' && /\d\s*$/.test(before)) return false;
-    return true;
-}
+// "cc" / "xx" only count when the first key comes after a short pause.
+// Words like "account" or "5 cc to ml" are typed in one quick run, so their
+// double letters don't trigger it; pausing and then tapping cc does.
+const SHORTCUT_PAUSE_MS = 400;
+let lastKeyAt = 0;
 
 // Remove the first "c" that was typed before the shortcut was recognised.
 function removeShortcutKey(key) {
@@ -659,6 +653,8 @@ function removeShortcutKey(key) {
 
 window.addEventListener('keydown', event => {
     if (event.repeat) return;
+    const pausedBefore = Date.now() - lastKeyAt >= SHORTCUT_PAUSE_MS;
+    lastKeyAt = Date.now();
 
     if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) {
         lastClearKeyAt = 0;
@@ -677,7 +673,7 @@ window.addEventListener('keydown', event => {
             removeShortcutKey('c');
             clearCalculator();
         } else {
-            lastClearKeyAt = canStartShortcut('c') ? now : 0;
+            lastClearKeyAt = pausedBefore ? now : 0;
         }
         return;
     }
@@ -700,7 +696,7 @@ window.addEventListener('keydown', event => {
             lastDeleteKeyAt = 0;
             deleteRow(activeInput.closest('.calculation-row'));
         } else {
-            lastDeleteKeyAt = canStartShortcut('x') ? now : 0;
+            lastDeleteKeyAt = pausedBefore ? now : 0;
         }
         return;
     }
