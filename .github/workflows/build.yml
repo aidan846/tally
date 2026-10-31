@@ -26,33 +26,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # One installer per platform. Windows on ARM runs the x64 build.
           - os: windows-latest
             label: windows-x64
             target: x86_64-pc-windows-msvc
-            bundles: nsis,msi
-            bundlePath: |
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-          - os: windows-latest
-            label: windows-x86
-            target: i686-pc-windows-msvc
-            bundles: nsis,msi
-            bundlePath: |
-              src-tauri/target/i686-pc-windows-msvc/release/bundle/nsis/*.exe
-              src-tauri/target/i686-pc-windows-msvc/release/bundle/msi/*.msi
-          - os: macos-15-intel
-            label: macos-intel
-            target: x86_64-apple-darwin
-            bundles: dmg
-            bundlePath: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+            rustTargets: x86_64-pc-windows-msvc
+            bundles: nsis
+            bundlePath: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          # A single universal app runs natively on Apple Silicon and Intel Macs.
           - os: macos-15
-            label: macos-apple-silicon
-            target: aarch64-apple-darwin
+            label: macos-universal
+            target: universal-apple-darwin
+            rustTargets: aarch64-apple-darwin,x86_64-apple-darwin
             bundles: dmg
-            bundlePath: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            bundlePath: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
           - os: ubuntu-24.04
             label: linux-x64
             target: x86_64-unknown-linux-gnu
+            rustTargets: x86_64-unknown-linux-gnu
             bundles: deb,appimage
             bundlePath: |
               src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
@@ -66,7 +57,7 @@ jobs:
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.rustTargets }}
       - name: Install Linux prerequisites
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -138,15 +129,13 @@ jobs:
             fi
           }
 
-          check_count '*.exe' 2
-          check_count '*.msi' 2
-          check_count '*.dmg' 2
+          check_count '*.exe' 1
+          check_count '*.dmg' 1
           check_count '*.deb' 1
           check_count '*.AppImage' 1
 
           unexpected=$(find release-assets -type f ! \( \
             -name '*.exe' -o \
-            -name '*.msi' -o \
             -name '*.dmg' -o \
             -name '*.deb' -o \
             -name '*.AppImage' \
@@ -165,7 +154,6 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             release-assets/**/*.exe
-            release-assets/**/*.msi
             release-assets/**/*.dmg
             release-assets/**/*.deb
             release-assets/**/*.AppImage

@@ -1,3 +1,8 @@
+/* One font everywhere. A bare "monospace" means Courier inside the macOS app
+   but Menlo in Chrome, so name the fonts: Menlo on Mac, Consolas on Windows,
+   the system monospace font elsewhere. */
+:root { --font-mono: Menlo, Consolas, monospace; }
+
 #titlebar {
   -webkit-app-region: drag;
   height: 32px;
@@ -15,7 +20,7 @@
   top: calc(50% + 1px);
   transform: translate(-50%, -50%);
   font-size: 14px;
-  font-family: monospace;
+  font-family: var(--font-mono);
   line-height: 1;
   color: inherit;
   pointer-events: none;
@@ -41,8 +46,10 @@
 .traffic-light.yellow { background: #febc2e; }
 .traffic-light.green { background: #28c840; }
 
-/* macOS supplies the native controls when the window uses title-bar overlay. */
-html[data-platform="darwin"] #titlebar-left { display: none; }
+/* macOS supplies the native controls when the window uses title-bar overlay,
+   and the browser window already has its own in the web version. */
+html[data-platform="darwin"] #titlebar-left,
+html[data-platform="web"] #titlebar-left { display: none; }
 
 #titlebar-right {
   -webkit-app-region: no-drag;
@@ -164,7 +171,7 @@ html[data-platform="win32"] #settings-page { inset: 32px 0 0; }
   background: transparent;
   border: 0;
   color: #f4f4f4;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: inherit;
   outline: none;
 }
@@ -292,7 +299,7 @@ html[data-platform="web"] .container {
 body {
   background: #1e1e1e;
   color: #fff;
-  font-family: monospace;
+  font-family: var(--font-mono);
   margin: 0;
   overflow: hidden;
 }
@@ -502,7 +509,7 @@ html[data-platform="win32"] body.light .window-controls #close-button:hover { co
 .calculation-highlight,
 .input-placeholder,
 .input-ghost {
-  font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-kerning: none;
   font-variant-ligatures: none;
   font-feature-settings: normal;
