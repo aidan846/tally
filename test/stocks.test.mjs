@@ -115,3 +115,8 @@ await resolveStockData(parseStockExpression('BTC Stock', now), async url => {
 assert.match(stockUrl, /BTC\?/);
 
 console.log('Passed stock query and provider cases.');
+
+// A variable used in math isn't a ticker.
+assert.equal(parseStockExpression('price * 2', now, new Set(['price'])), null);
+assert.equal(parseStockExpression('3 + total cost', now, new Set(['total cost'])), null);
+assert.ok(parseStockExpression('AAPL * 2', now, new Set(['price'])));

@@ -173,9 +173,19 @@ function resizeInput(input) {
     input.style.height = `${input.scrollHeight}px`;
 }
 
+// Words like "sqrt4", "tomorrow" or "easter" look like ticker symbols. Only
+// look a word up as a stock when Tally can't calculate it itself; writing
+// "X stock" always forces the lookup.
+function findStockQuery(value, knownVariables = new Set()) {
+    const query = parseStockExpression(value, new Date(), knownVariables);
+    if (!query || /\bstock\b/i.test(value)) return query;
+    const local = evaluateInput(value, decimalPlaces)[0];
+    return local && local !== '❌' ? null : query;
+}
+
 function renderHighlight(input, resolvedStockQuery = undefined) {
     const stockQuery = resolvedStockQuery === undefined
-        ? parseStockExpression(input.value, new Date(), new Set())
+        ? findStockQuery(input.value)
         : resolvedStockQuery;
     const stockSymbols = stockQuery?.operands?.map(operand => operand.symbol) || [];
     input.parentElement.querySelector('.calculation-highlight').innerHTML = highlightExpression(input.value, { stockSymbols });
@@ -233,14 +243,16 @@ let lastAnswerInsert = null;
 
 function useAnswer(output, value) {
     const row = output.closest('.calculation-row');
-    const newestRow = calculator.querySelector('.calculation-row:last-child');
-    let input = newestRow.querySelector('.calculation-input');
+    // Insert into the line being edited (or the last line if none is).
+    const active = document.activeElement?.classList?.contains('calculation-input') ? document.activeElement : null;
+    let input = active || calculator.querySelector('.calculation-row:last-child .calculation-input');
+    const targetRow = input.closest('.calculation-row');
     let createdRow = null;
-    // Clicking the current line's own answer starts a new line with it.
-    if (row === newestRow && input.value.trim()) {
-        newestRow.classList.remove('has-placeholder');
+    // Clicking the answer of the line you're on starts a new line with it.
+    if (row === targetRow && input.value.trim()) {
+        targetRow.classList.remove('has-placeholder');
         createdRow = createRow();
-        newestRow.after(createdRow);
+        targetRow.after(createdRow);
         input = createdRow.querySelector('.calculation-input');
     }
     input.focus();
@@ -431,7 +443,7 @@ function updateOutputs(changedInput = null) {
     if (changedInput && inputs.includes(changedInput) && !inputs.some(dependsOnOtherLines)) {
         const output = changedInput.closest('.calculation-row').querySelector('.calculation-output');
         const weatherQuery = parseWeatherQuery(changedInput.value);
-        const stockQuery = weatherQuery ? null : parseStockExpression(changedInput.value, new Date(), new Set());
+        const stockQuery = weatherQuery ? null : findStockQuery(changedInput.value);
         if (weatherQuery || stockQuery) {
             startAsyncQuery(changedInput, output, weatherQuery || stockQuery, weatherQuery ? 'weather' : 'stock');
         } else {
@@ -447,7 +459,7 @@ function updateOutputs(changedInput = null) {
     const weatherQueries = inputs.map(input => parseWeatherQuery(input.value));
     const knownVariables = new Set();
     const stockQueries = inputs.map((input, index) => {
-        const query = weatherQueries[index] ? null : parseStockExpression(input.value, new Date(), knownVariables);
+        const query = weatherQueries[index] ? null : findStockQuery(input.value, knownVariables);
         const assignment = input.value.match(/^([a-zA-Z_][a-zA-Z0-9_]*(?:\s+[a-zA-Z_][a-zA-Z0-9_]*)*)\s*[:=]/);
         if (assignment) knownVariables.add(assignment[1].trim().toLowerCase());
         return query;
@@ -624,12 +636,16 @@ function focusCurrentInput() {
 document.addEventListener('pointerdown', event => {
     if (event.button !== 0 || !(event.target instanceof Element)) return;
     const target = event.target;
-    // The calculator itself is a single typing surface: clicks on an older row,
-    // its result, or unused space should always return to the newest input.
+    // Clicking a line's text puts the cursor there. Clicking an answer keeps the
+    // cursor where it is (so the answer can be inserted there), and clicking
+    // empty space goes back to the last line.
     // Overlays and the title bar retain their own controls and focus behavior.
     if (target.closest('#titlebar, #settings-page, #update-notice, #support-toast, #currency-status')) return;
     if (!target.closest('.container') && target !== document.body) return;
+    if (target.closest('.input-stack')) return;
     event.preventDefault();
+    const active = document.activeElement?.classList?.contains('calculation-input');
+    if (target.closest('.calculation-output') && active) return;
     focusCurrentInput();
 }, { capture: true });
 

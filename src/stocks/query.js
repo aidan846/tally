@@ -66,6 +66,8 @@ export function parseStockExpression(value, now = new Date(), knownVariables = n
     const operation = expression.match(/^(.*?)\s*([+\-*/])\s*(.*?)$/);
     if (operation) {
         const [, leftText, operator, rightText] = operation;
+        // "price * 2" uses the variable `price`, not a ticker called PRICE.
+        if ([leftText, rightText].some(text => knownVariables.has(text.trim().toLowerCase()))) return null;
         const left = parseStockReference(leftText, now) || parseNumericOperand(leftText);
         const right = parseStockReference(rightText, now) || parseNumericOperand(rightText);
         if (!left || !right || (!left.symbol && !right.symbol)) return null;
