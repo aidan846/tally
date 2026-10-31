@@ -539,10 +539,19 @@ function initializeCalculator() {
 let clearedSheet = null;
 
 function clearCalculator() {
-    const values = [...calculator.querySelectorAll('.calculation-input')].map(input => input.value);
+    const rows = [...calculator.querySelectorAll('.calculation-row')];
+    const values = rows.map(row => row.querySelector('.calculation-input').value);
     clearedSheet = values.some(value => value.trim()) ? values : null;
-    calculator.replaceChildren(createRow('', { showPlaceholder: true }));
-    calculator.querySelector('.calculation-input').focus();
+    // Keep the row being typed in and just empty it. Removing the focused text
+    // box in the middle of a key press can crash the macOS app.
+    const activeRow = document.activeElement?.closest?.('.calculation-row');
+    const keptRow = rows.includes(activeRow) ? activeRow : rows[0];
+    rows.forEach(row => { if (row !== keptRow) row.remove(); });
+    const input = keptRow.querySelector('.calculation-input');
+    asyncRowStates.delete(input);
+    input.value = '';
+    setPlaceholder(input);
+    input.focus();
     updateOutputs();
     if (clearedSheet) showCopyToast(`Cleared · ${isMac ? '⌘' : 'Ctrl+'}Z to undo`, 3000);
 }
@@ -637,10 +646,17 @@ const SHORTCUT_SEQUENCE_MS = 350;
 let lastClearKeyAt = 0;
 let lastDeleteKeyAt = 0;
 
-// "cc" / "xx" only count when the first key comes after a short pause.
-// Words like "account" or "5 cc to ml" are typed in one quick run, so their
-// double letters don't trigger it; pausing and then tapping cc does.
+// "cc" / "xx" are ignored only in the middle of a word typed in one quick run
+// (like "account"). After a space, on an empty line, or after a short pause
+// they always work. An accidental clear can be undone with Cmd/Ctrl+Z.
 const SHORTCUT_PAUSE_MS = 400;
+
+function canStartShortcut(pausedBefore) {
+    if (pausedBefore) return true;
+    const input = document.activeElement?.classList?.contains('calculation-input') ? document.activeElement : null;
+    if (!input) return true;
+    return !/[a-z0-9]$/i.test(input.value.slice(0, input.selectionStart));
+}
 let lastKeyAt = 0;
 
 // Remove the first "c" that was typed before the shortcut was recognised.
@@ -673,7 +689,7 @@ window.addEventListener('keydown', event => {
             removeShortcutKey('c');
             clearCalculator();
         } else {
-            lastClearKeyAt = pausedBefore ? now : 0;
+            lastClearKeyAt = canStartShortcut(pausedBefore) ? now : 0;
         }
         return;
     }
@@ -694,9 +710,11 @@ window.addEventListener('keydown', event => {
         if (lastDeleteKeyAt && now - lastDeleteKeyAt <= SHORTCUT_SEQUENCE_MS) {
             event.preventDefault();
             lastDeleteKeyAt = 0;
-            deleteRow(activeInput.closest('.calculation-row'));
+            // Finish the key press before removing the focused row (see clearCalculator).
+            const row = activeInput.closest('.calculation-row');
+            window.setTimeout(() => { if (row.isConnected) deleteRow(row); }, 0);
         } else {
-            lastDeleteKeyAt = pausedBefore ? now : 0;
+            lastDeleteKeyAt = canStartShortcut(pausedBefore) ? now : 0;
         }
         return;
     }
