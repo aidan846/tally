@@ -1,6 +1,6 @@
 [package]
 name = "tally"
-version = "2.3.1"
+version = "2.3.2"
 description = "A simple calculator for your daily tasks."
 authors = ["aidan846 <lando.aidan@gmail.com>"]
 edition = "2021"
